@@ -80,17 +80,20 @@ export default function SearchScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Search Box */}
+        <Text style={styles.label}>ค้นหาด้วยชื่อ</Text>
         <View style={styles.searchRow}>
           <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
           <TextInput
-            style={{ flex: 1 }}
+            style={{ flex: 1, fontSize: 15 }}
             placeholder="เช่น บัตรนักศึกษา, ร่ม, เสื้อ, USB"
+            placeholderTextColor="#9CA3AF"
             value={search}
             onChangeText={setSearch}
           />
         </View>
 
         {/* Filter: Status */}
+        <Text style={styles.label}>สถานะ</Text>
         <View style={styles.filterRow}>
           {[
             { key: "all", label: "ทั้งหมด" },
@@ -111,6 +114,7 @@ export default function SearchScreen() {
         </View>
 
         {/* Filter: Category */}
+        <Text style={styles.label}>หมวดหมู่</Text>
         <View style={styles.filterRow}>
           {[
             { key: "all", label: "ทั้งหมด" },
@@ -132,25 +136,30 @@ export default function SearchScreen() {
         </View>
 
         {/* Date + Time */}
+        <Text style={styles.label}>วันและเวลา</Text>
         <View style={styles.dateTimeRow}>
           <TextInput
             style={styles.dateInput}
             placeholder="DD/MM/YYYY"
+            placeholderTextColor="#9CA3AF"
             value={dateFilter}
             onChangeText={setDateFilter}
           />
           <TextInput
             style={styles.dateInput}
             placeholder="HH:MM"
+            placeholderTextColor="#9CA3AF"
             value={timeFilter}
             onChangeText={setTimeFilter}
           />
         </View>
 
         {/* Location */}
+        <Text style={styles.label}>สถานที่</Text>
         <TextInput
-          style={[styles.searchRow, { marginTop: 12 }]}
+          style={styles.searchRow}
           placeholder="เช่น โรงอาหาร, ห้องสมุด, อาคารวิทยาการคอมพิวเตอร์"
+          placeholderTextColor="#9CA3AF"
           value={locationFilter}
           onChangeText={setLocationFilter}
         />
@@ -183,6 +192,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
+    paddingTop: 40, // เว้น status bar
   },
   headerTitle: {
     color: "#fff",
@@ -190,18 +200,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginLeft: 12,
   },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+    marginTop: 10,
+  },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
     borderRadius: 10,
     padding: 12,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
     marginBottom: 12,
   },
   filterRow: {
@@ -224,16 +237,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 12,
+    gap: 10,
   },
   dateInput: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
     backgroundColor: "#fff",
-    marginRight: 8,
   },
   sectionTitle: {
     fontSize: 16,

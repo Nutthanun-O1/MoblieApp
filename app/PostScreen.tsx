@@ -215,16 +215,18 @@ export default function PostScreen() {
 const styles = StyleSheet.create({
   // Header
   headerBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1D4ED8",
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#1D4ED8",
+  paddingTop: 40, // ⭐ เพิ่มตรงนี้ (ประมาณ 40 สำหรับ iPhone/Android ส่วนใหญ่)
+  paddingBottom: 16,
+  paddingHorizontal: 18,
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 4,
+},
+
   backArrow: {
     fontSize: 22,
     color: "#fff",
