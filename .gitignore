@@ -1,0 +1,29 @@
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# iOS/Android build folders
+android/
+ios/
+
+# Environment files
+.env
+
+# macOS
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional: local Metro bundler cache
+.metro-cache/
+
+# Build outputs
+web-build/
+
+# Lockfile (keep if you intentionally want it tracked)
+# package-lock.json
