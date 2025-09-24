@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 // Single-file Expo app (App.js)
 // - ใช้งานได้ในโปรเจกต์ที่สร้างด้วย `npx create-expo-app` หรือ `expo init`
@@ -37,6 +38,8 @@ export default function App() {
       status: 'found',
     },
   ]);
+
+  const router = useRouter();
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all'); // all | lost | found | returned
@@ -98,23 +101,23 @@ export default function App() {
     setModalVisible(false);
   }
 
-  function handleMarkReturned(id) {
+  function handleMarkReturned(id: number) {
     setItems((prev) =>
       prev.map((it) => (it.id === id ? { ...it, status: 'returned' } : it))
     );
     Alert.alert('สำเร็จ', 'ทำเครื่องหมายว่า "ส่งคืนแล้ว"');
   }
 
-  function handleContact(item) {
+  function handleContact(item: { id?: number; title: any; description?: string; location?: string; time?: string; status?: string; }) {
     // ตัวอย่าง: แสดง Alert (ในแอปจริง อาจเปิดหน้าแชท / โทร / ส่งข้อความ)
     Alert.alert('ติดต่อผู้พบ/ผู้แจ้ง', `ติดต่อเกี่ยวกับ: ${item.title}`);
   }
 
-  function handleView(item) {
+  function handleView(item: { id?: number; title: any; description: any; location: any; time: any; status: any; }) {
     Alert.alert(item.title, `${item.description}\nสถานที่: ${item.location}\nเวลา: ${item.time}\nสถานะ: ${item.status}`);
   }
 
-  function renderBadge(status) {
+  function renderBadge(status: string) {
     if (status === 'lost') return <Text style={[styles.badge, styles.badgeLost]}>ของหาย</Text>;
     if (status === 'found') return <Text style={[styles.badge, styles.badgeFound]}>พบของ</Text>;
     return <Text style={[styles.badge, styles.badgeReturned]}>ส่งคืนแล้ว</Text>;
@@ -232,7 +235,7 @@ export default function App() {
 
       {/* Bottom navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => Alert.alert('หน้าหลัก')}> 
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/home')}> 
           <Text style={[styles.navIcon, styles.navActive]}>🏠</Text>
           <Text style={[styles.navLabel, styles.navActive]}>หน้าหลัก</Text>
         </TouchableOpacity>
@@ -241,7 +244,12 @@ export default function App() {
           <Text style={styles.navIcon}>➕</Text>
           <Text style={styles.navLabel}>ประกาศ</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => Alert.alert('โปรไฟล์')}> 
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => {
+            router.push('/profile');
+          }}
+        >
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>โปรไฟล์</Text>
         </TouchableOpacity>
