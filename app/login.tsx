@@ -1,55 +1,106 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ImageBackground,
-  TextInput,
-  TouchableOpacity,
-  Linking,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, StyleSheet, Image, ImageBackground,
+  TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView,
+  Platform, ActivityIndicator, Alert
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { supabase } from "../lib/supabaseClient";
+
+const DEMO_MODE = false; // ตั้ง true เพื่อลองกดแล้วไปหน้า Home โดยไม่เช็คฐานข้อมูล
 
 export default function LoginScreen() {
   const [psuId, setPsuId] = useState("");
   const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [log, setLog] = useState("พร้อมทดสอบ");
 
-  const onLogin = () => {
-    // TODO: ใส่ลอจิกล็อกอินจริง
-    // ตัวอย่าง: alert("เข้าสู่ระบบ");
+  const onLogin = async () => {
+    setLog("กดปุ่มแล้ว"); // เห็นทันทีว่า onPress ทำงาน
+    console.log("[login] pressed");
+    if (!psuId || !password) {
+      setLog("⚠️ กรุณากรอกข้อมูลให้ครบ");
+      Alert.alert("แจ้งเตือน", "กรุณากรอก รหัสนักศึกษา และ รหัสผ่าน");
+      return;
+    }
+
+    if (DEMO_MODE) {
+      setLog("DEMO_MODE: ข้ามการเชื่อมต่อ DB และไปหน้า Home");
+      router.replace("/home");
+      return;
+    }
+
+    try {
+      setBusy(true);
+      setLog("กำลังเชื่อมต่อฐานข้อมูล…");
+      // ทดสอบว่าอ่านตาราง users ได้ไหม
+      const { error: pingErr } = await supabase.from("users").select("psu_id").limit(1);
+      if (pingErr) {
+        setLog("❌ DB/policy error: " + pingErr.message);
+        Alert.alert("DB Error", pingErr.message);
+        setBusy(false);
+        return;
+      }
+
+      setLog("เรียก RPC app_login …");
+      const { data, error } = await supabase.rpc("app_login", {
+        p_psu_id: psuId.trim(),
+        p_password: password,
+      });
+
+      if (error) {
+        setLog("❌ RPC error: " + error.message);
+        Alert.alert("ล็อกอินไม่สำเร็จ", error.message);
+        setBusy(false);
+        return;
+      }
+      if (!data || data.length === 0) {
+        setLog("❌ PSU ID หรือรหัสผ่านไม่ถูกต้อง");
+        Alert.alert("ล็อกอินไม่สำเร็จ", "PSU ID หรือรหัสผ่านไม่ถูกต้อง");
+        setBusy(false);
+        return;
+      }
+
+      setLog("✅ สำเร็จ: " + data[0].full_name);
+      Alert.alert("สำเร็จ", `สวัสดี ${data[0].full_name}`);
+      router.replace("/home");
+    } catch (e: any) {
+      console.error(e);
+      setLog("❌ Exception: " + (e?.message || String(e)));
+      Alert.alert("ข้อผิดพลาด", e?.message || String(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const callUnit = () => Linking.openURL("tel:074000000"); // <— แก้เป็นเบอร์จริง
-  const mailUnit = () => Linking.openURL("mailto:student.affairs@psu.ac.th");
+  const pingDB = async () => {
+    try {
+      setBusy(true);
+      setLog("Ping ฐานข้อมูล…");
+      const { data, error } = await supabase.from("users").select("psu_id").limit(1);
+      if (error) setLog("❌ DB error: " + error.message);
+      else setLog("✅ DB ok: " + JSON.stringify(data));
+    } catch (e: any) {
+      setLog("❌ Exception: " + e?.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: "#fff" }}>
-        {/* ===== Header ===== */}
-        <ImageBackground
-          source={require("../assets/images/header.jpg")}
-          style={styles.header}
-          resizeMode="cover"
-        >
-          <View style={styles.headerOverlay} />
+        {/* HEADER (แบบเดิมของคุณ) */}
+        <ImageBackground source={require("../assets/images/header.jpg")} style={styles.header} resizeMode="cover">
+          <View style={styles.overlay} />
           <View style={styles.headerInner}>
-            <Image
-              source={require("../assets/images/PSU-logo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Image source={require("../assets/images/PSU-logo.png")} style={styles.logo} resizeMode="contain" />
             <Text style={styles.headerTitle}>ของหายได้คืน</Text>
-            <Text style={styles.headerSubtitle}>
-              ระบบประกาศของหาย/พบของ สำหรับนักศึกษาและบุคลากร
-            </Text>
+            <Text style={styles.headerSubtitle}>ระบบประกาศของหาย/พบของ สำหรับนักศึกษาและบุคลากร</Text>
           </View>
         </ImageBackground>
 
-        {/* ===== Login Card ===== */}
+        {/* BODY */}
         <View style={styles.body}>
           <View style={styles.card}>
             <Text style={styles.label}>รหัสนักศึกษา</Text>
@@ -57,7 +108,7 @@ export default function LoginScreen() {
               value={psuId}
               onChangeText={setPsuId}
               placeholder="6987654321"
-              keyboardType="number-pad"
+              autoCapitalize="none"
               style={styles.input}
               placeholderTextColor="#94A3B8"
             />
@@ -72,56 +123,24 @@ export default function LoginScreen() {
               placeholderTextColor="#94A3B8"
             />
 
-            <TouchableOpacity style={styles.loginBtn} onPress={onLogin} activeOpacity={0.9}>
-              <Text style={styles.loginText}>เข้าสู่ระบบ</Text>
+            <TouchableOpacity style={[styles.btn, busy && { opacity: 0.6 }]} onPress={onLogin} disabled={busy} activeOpacity={0.9}>
+              <Text style={styles.btnText}>{busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}</Text>
             </TouchableOpacity>
 
-            {/* Note */}
-            <View >
-              <Text style={styles.noteText}>* ใช้บัญชีมหาวิทยาลัย (SSO) เท่านั้น</Text>
-            </View>
+            <TouchableOpacity style={[styles.btnSecondary, busy && { opacity: 0.6 }]} onPress={pingDB} disabled={busy} activeOpacity={0.9}>
+              <Text style={styles.btnSecondaryText}>🔌 ทดสอบเชื่อมต่อฐานข้อมูล</Text>
+            </TouchableOpacity>
+
+            {busy && <ActivityIndicator style={{ marginTop: 8 }} />}
           </View>
 
-{/* Divider OR */}
-            <View style={styles.dividerRow}>
-              <View style={styles.divider} />
-              <Text style={styles.dividerText}>หรือ</Text>
-              <View style={styles.divider} />
-            </View>
-          {/* ===== External Section (คนนอก PSU) ===== */}
-          <View style={styles.externalCard}>
-            <Text style={styles.externalTitle}>
-              สำหรับบุคคลภายนอก <Text style={{ fontWeight: "900" }}>(คนนอก PSU)</Text>
+          {/* DEBUG BOX */}
+          <View style={styles.debugBox}>
+            <Text style={styles.debugTitle}>Debug</Text>
+            <Text selectable style={styles.debugText}>
+              env: url={(process.env.EXPO_PUBLIC_SUPABASE_URL || "").slice(0, 32)}… key={(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "").slice(0, 6)}…
             </Text>
-            <Text style={styles.externalDesc}>
-              บุคคลภายนอกไม่มีสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อหน่วยงานรับผิดชอบ
-            </Text>
-
-            <View style={styles.contactRow}>
-              {/* โทรติดต่อ */}
-              <TouchableOpacity style={styles.contactBtn} onPress={callUnit} activeOpacity={0.9}>
-                <View style={styles.iconBadge}>
-                  <Ionicons name="call" size={18} color="#2563EB" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.contactTitle}>โทรติดต่อ</Text>
-                  <Text style={styles.contactText}>074-XXX-XXX</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* อีเมลหน่วยงาน */}
-              <TouchableOpacity style={styles.contactBtn} onPress={mailUnit} activeOpacity={0.9}>
-                <View style={styles.iconBadge}>
-                  <MaterialIcons name="email" size={18} color="#2563EB" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.contactTitle}>อีเมลหน่วยงาน</Text>
-                  <Text style={styles.emailPill}>student.affairs@psu.ac.th</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.tip}>* เจ้าหน้าที่จะช่วยประสานงานประกาศ รับ–ส่งของหายให้</Text>
+            <Text selectable style={styles.debugText}>{log}</Text>
           </View>
         </View>
       </ScrollView>
@@ -130,106 +149,39 @@ export default function LoginScreen() {
 }
 
 const RADIUS = 14;
-
 const styles = StyleSheet.create({
   header: { height: 220, justifyContent: "flex-end" },
-  headerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
   headerInner: { paddingHorizontal: 16, paddingBottom: 16 },
-  logo: { width: 140, height: 64, marginBottom: 12 }, // โลโก้ใหญ่ตามแบบ
+  logo: { width: 150, height: 68, marginBottom: 12 },
   headerTitle: { color: "#fff", fontSize: 22, fontWeight: "900" },
   headerSubtitle: { color: "#E5E7EB", fontSize: 12, marginTop: 4 },
 
-  body: { paddingHorizontal: 16, marginTop: -28 },
+  body: { paddingHorizontal: 16, marginTop: -28, alignItems: "center" },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: RADIUS,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#EBEEF3",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 1,
+    width: "100%", maxWidth: 360, backgroundColor: "#fff",
+    borderRadius: RADIUS, padding: 16, borderWidth: 1, borderColor: "#EBEEF3",
   },
   label: { fontSize: 13, color: "#0F172A", fontWeight: "700", marginBottom: 6 },
   input: {
-    height: 44,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: "#F3F6FB",
-    borderWidth: 1,
-    borderColor: "#DDE4EE",
+    height: 44, paddingHorizontal: 12, borderRadius: 10,
+    backgroundColor: "#F3F6FB", borderWidth: 1, borderColor: "#DDE4EE",
   },
-  loginBtn: {
-    marginTop: 16,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2563EB",
+  btn: {
+    marginTop: 16, height: 48, borderRadius: 12,
+    alignItems: "center", justifyContent: "center", backgroundColor: "#2563EB",
   },
-  loginText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  btnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  btnSecondary: {
+    marginTop: 10, height: 44, borderRadius: 10, alignItems: "center",
+    justifyContent: "center", backgroundColor: "#111827",
+  },
+  btnSecondaryText: { color: "#fff", fontWeight: "700" },
 
-  noteBox: {
-    marginTop: 10,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#EBEEF3",
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: "center",
+  debugBox: {
+    width: "100%", maxWidth: 360, marginTop: 12,
+    borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 12, backgroundColor: "#F8FAFC",
   },
-  noteText: { fontSize: 12, color: "#94A3B8" },
-
-  dividerRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  divider: { flex: 1, height: 1, backgroundColor: "#E5E7EB" },
-  dividerText: { color: "#9CA3AF", paddingHorizontal: 10, fontSize: 12 },
-
-  externalCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: RADIUS,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#EBEEF3",
-    marginTop: 12,
-  },
-  externalTitle: { fontWeight: "800", color: "#111827", marginBottom: 6 },
-  externalDesc: { color: "#475569", fontSize: 12, marginBottom: 12 },
-  contactRow: { flexDirection: "row", gap: 12 },
-  contactBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-  },
-  iconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#EAF2FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  contactTitle: { fontSize: 12, fontWeight: "800", color: "#0F172A" },
-  contactText: { fontSize: 12, color: "#475569" },
-  emailPill: {
-    marginTop: 2,
-    alignSelf: "flex-start",
-    backgroundColor: "#EEF2FF",
-    color: "#1E40AF",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    fontSize: 12,
-    overflow: "hidden",
-  },
-  tip: { color: "#94A3B8", fontSize: 12, marginTop: 10 },
+  debugTitle: { fontWeight: "800", marginBottom: 6 },
+  debugText: { fontFamily: Platform.select({ web: "monospace", default: undefined }) },
 });
