@@ -29,7 +29,7 @@ export default function Login() {
 
   const onLogin = async () => {
     if (!username.trim() || !password) {
-      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
 
@@ -41,18 +41,19 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // ✅ เรียก RPC ฝั่งฐานข้อมูล (ตรวจรหัสผ่านใน DB)
-      const { data, error } = await supabase.rpc("app_login", {
-        p_psu_id: username.trim(),
-        p_password: password,
+      // 🔑 ใช้ Auth ของ Supabase โดยตรง
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username.trim(),   // 👈 ให้ผู้ใช้ใส่อีเมลที่ใช้สมัครใน Supabase
+        password,
       });
 
       if (error) {
         Alert.alert("ล็อกอินไม่สำเร็จ", error.message);
         return;
       }
-      if (!data || data.length === 0) {
-        Alert.alert("ล็อกอินไม่สำเร็จ", "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+
+      if (!data?.session) {
+        Alert.alert("ล็อกอินไม่สำเร็จ", "ไม่พบ session");
         return;
       }
 
@@ -64,6 +65,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>

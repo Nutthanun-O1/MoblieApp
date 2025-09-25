@@ -33,7 +33,7 @@ export default function ProfileScreen() {
       const { data, error: userError } = await supabase
         .from("users")
         .select("psu_id, full_name, email, phone")
-        .eq("psu_id", authUser.id)   // ใช้ auth.id เป็น psu_id
+        .eq("email", authUser.email)   // ✅ ใช้ email แทน
         .single();
 
       if (userError) {
