@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   FlatList,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -26,10 +27,28 @@ export default function HomeScreen() {
     fetchItems();
   }, []);
 
+  // ✅ รีโหลดเมื่อกลับมาที่หน้า Home
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchItems();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   async function fetchItems() {
     const { data, error } = await supabase
       .from("items")
-      .select("*")
+      .select(`
+        item_id,
+        title,
+        description,
+        category,
+        status,
+        location,
+        post_time,
+        contact_info,
+        item_photos(photo_url)
+      `)
       .order("post_time", { ascending: false });
 
     if (error) {
@@ -116,13 +135,13 @@ export default function HomeScreen() {
       </View>
 
       <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
-  <TouchableOpacity
-    style={styles.searchInput}
-    onPress={() => navigation.navigate("SearchScreen")}
-  >
-    <Text style={{ color: "#9CA3AF" }}>ค้นหาชื่อของ/สถานที่...</Text>
-  </TouchableOpacity>
-</View>
+        <TouchableOpacity
+          style={styles.searchInput}
+          onPress={() => navigation.navigate("SearchScreen")}
+        >
+          <Text style={{ color: "#9CA3AF" }}>ค้นหาชื่อของ/สถานที่...</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Filters */}
       <View style={styles.filtersRow}>
@@ -156,7 +175,15 @@ export default function HomeScreen() {
         {filtered.map((item) => (
           <View key={item.item_id} style={styles.card}>
             <View style={{ flexDirection: "row" }}>
-              <View style={styles.imagePlaceholder} />
+              {/* ✅ แสดงรูปแทน Placeholder */}
+              {item.item_photos && item.item_photos.length > 0 ? (
+                <Image
+                  source={{ uri: item.item_photos[0].photo_url }}
+                  style={styles.imageThumb}
+                />
+              ) : (
+                <View style={styles.imagePlaceholder} />
+              )}
               <View style={{ flex: 1 }}>
                 <View
                   style={{
@@ -300,6 +327,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
     borderRadius: 12,
     marginRight: 12,
+  },
+  imageThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: "#E5E7EB",
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
   cardDesc: { color: "#374151", marginTop: 4, fontSize: 14 },

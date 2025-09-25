@@ -4,31 +4,42 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
+  SafeAreaView,
+  ScrollView,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
+import uuid from "react-native-uuid";
 import { supabase } from "../lib/supabaseClient";
 
 export default function PostScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
+  // states
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<
-    "card" | "clothes" | "equipment" | "other"
-  >("other");
-  const [status, setStatus] = useState<"lost" | "found">("lost");
+  const [category, setCategory] = useState("other");
+  const [status, setStatus] = useState("lost");
   const [location, setLocation] = useState("");
-  const [contact, setContact] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [image, setImage] = useState<string | null>(null);
 
-  // เลือกรูป
+  const categories = [
+    { key: "card", label: "บัตร" },
+    { key: "clothes", label: "เสื้อผ้า" },
+    { key: "equipment", label: "อุปกรณ์" },
+    { key: "other", label: "อื่น ๆ" },
+  ];
+
+  // 📷 เลือกรูป
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -40,308 +51,313 @@ export default function PostScreen() {
     }
   };
 
-  // บันทึกลง DB
-  const handleSubmit = async () => {
-    if (!title || !location || !contact) {
-      Alert.alert("กรุณากรอกข้อมูลให้ครบ");
+// 🚀 กดโพสต์
+async function handlePost() {
+  try {
+    if (!title || !location || !contactInfo || !date || !time) {
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
 
-    try {
-      const item_id = crypto.randomUUID();
-      const post_time = new Date(`${date}T${time || "00:00"}`);
+    // ✅ ดึง session ของผู้ใช้
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      Alert.alert("Error", "กรุณาเข้าสู่ระบบก่อนโพสต์");
+      return;
+    }
+    const user = sessionData.session.user;
 
-      const { error: itemError } = await supabase.from("items").insert([
-        {
-          item_id,
-          title,
-          description,
-          category,
-          status,
-          location,
-          posted_by: "demo_user",
-          post_time,
-          contact_info: contact,
-        },
-      ]);
+    // ✅ หา psu_id จาก users table
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("psu_id")
+      .eq("email", user.email)
+      .single();
 
-      if (itemError) throw itemError;
+    if (userError || !userData) {
+      Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ในระบบ");
+      return;
+    }
 
-      if (image) {
-        const fileExt = image.split(".").pop();
-        const filePath = `${item_id}.${fileExt}`;
+    const psu_id = userData.psu_id;
+    const item_id = uuid.v4().toString();
 
-        const imgRes = await fetch(image);
-        const blob = await imgRes.blob();
+    // ✅ รวมวันเวลา
+    const post_time = new Date(`${date}T${time}:00`);
 
-        const { error: uploadError } = await supabase.storage
-          .from("item-photos")
-          .upload(filePath, blob);
+    // ✅ insert ข้อมูล items
+    const { error: insertError } = await supabase.from("items").insert([
+      {
+        item_id,
+        title,
+        description,
+        category,
+        status,
+        location,
+        posted_by: psu_id,
+        post_time,
+        contact_info: contactInfo,
+      },
+    ]);
+    if (insertError) throw insertError;
 
-        if (uploadError) throw uploadError;
+    // ✅ ถ้ามีรูป -> upload ไป storage + บันทึก item_photos
+    if (image) {
+      const fileExt = image.split(".").pop();
+      const filePath = `${item_id}_${Date.now()}.${fileExt}`;
 
-        const { publicUrl } = supabase.storage
-          .from("item-photos")
-          .getPublicUrl(filePath).data;
+      const imgRes = await fetch(image);
+      const blob = await imgRes.blob();
 
+      const { error: uploadError } = await supabase.storage
+        .from("item-photos")
+        .upload(filePath, blob, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("item-photos")
+        .getPublicUrl(filePath);
+
+      if (publicUrlData?.publicUrl) {
         await supabase.from("item_photos").insert([
           {
             item_id,
-            photo_url: publicUrl,
+            photo_url: publicUrlData.publicUrl,
+            uploaded_by: psu_id,
           },
         ]);
       }
-
-      Alert.alert("สำเร็จ", "โพสต์ประกาศเรียบร้อยแล้ว");
-      navigation.goBack();
-    } catch (err: any) {
-      console.error(err);
-      Alert.alert("เกิดข้อผิดพลาด", err.message);
     }
-  };
+
+    // ✅ ถ้าโพสต์เป็น "found" → เพิ่ม activity_hours อัตโนมัติ
+    if (status === "found") {
+      const { error: hoursError } = await supabase
+        .from("activity_hours")
+        .insert([
+          {
+            psu_id,
+            item_id,
+            hours: 2, // ค่า default
+            reason: "dropped_at_center", // หรือจะใช้ "returned_to_owner"
+            verified_by: null,
+          },
+        ]);
+
+      if (hoursError) throw hoursError;
+    }
+
+    Alert.alert("สำเร็จ", "โพสต์ถูกบันทึกแล้ว ✅");
+    navigation.goBack();
+  } catch (err: any) {
+    console.error("โพสต์ error:", err);
+    Alert.alert("Error", err.message || "เกิดข้อผิดพลาด");
+  }
+}
+
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.headerBar}>
+      <SafeAreaView style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{"<"}</Text>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ประกาศของหาย/พบของ</Text>
-      </View>
+      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* รูป */}
-        <Text style={styles.label}>อัปโหลดรูปภาพ</Text>
-        <View style={styles.imageRow}>
-          {image && (
-            <Image source={{ uri: image }} style={styles.imagePreview} />
-          )}
-          <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
-            <Text style={{ fontSize: 28, color: "#888" }}>+</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.hintText}>
-          กรุณาไม่อัปข้อมูลส่วนตัว เช่น เลขบัตรประชาชน ก่อนอัปโหลด
-        </Text>
+      {/* ✅ KeyboardAvoidingView ป้องกันคีย์บอร์ดบัง */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={10}
+      >
+        <ScrollView
+          style={styles.form}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Upload */}
+          <Text style={styles.label}>อัปโหลดรูปภาพ</Text>
+          <View style={styles.row}>
+            {image && (
+              <Image source={{ uri: image }} style={styles.previewImage} />
+            )}
+            <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
+              <Text style={{ fontSize: 28, color: "#888" }}>+</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* ฟอร์ม */}
-        <Text style={styles.label}>ชื่อสิ่งของ</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-        />
+          {/* Title */}
+          <Text style={styles.label}>ชื่อสิ่งของ</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+          />
 
-        <Text style={styles.label}>รายละเอียด</Text>
-        <TextInput
-          style={[styles.input, { height: 80 }]}
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
+          {/* Description */}
+          <Text style={styles.label}>รายละเอียด</Text>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
 
-        <Text style={styles.label}>หมวดหมู่</Text>
-        <View style={styles.row}>
-          {["card", "clothes", "equipment", "other"].map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.chip, category === c && styles.chipActive]}
-              onPress={() => setCategory(c as any)}
-            >
-              <Text
-                style={{ color: category === c ? "#fff" : "#333", fontSize: 13 }}
+          {/* Category */}
+          <Text style={styles.label}>หมวดหมู่</Text>
+          <View style={styles.row}>
+            {categories.map((c) => (
+              <TouchableOpacity
+                key={c.key}
+                style={[
+                  styles.chip,
+                  category === c.key && styles.chipActive,
+                ]}
+                onPress={() => setCategory(c.key)}
               >
-                {c === "card"
-                  ? "บัตร"
-                  : c === "clothes"
-                  ? "เสื้อผ้า"
-                  : c === "equipment"
-                  ? "อุปกรณ์"
-                  : "อื่น ๆ"}
+                <Text
+                  style={{ color: category === c.key ? "#fff" : "#2563eb" }}
+                >
+                  {c.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Location */}
+          <Text style={styles.label}>สถานที่</Text>
+          <TextInput
+            style={styles.input}
+            value={location}
+            onChangeText={setLocation}
+          />
+
+          {/* Status */}
+          <Text style={styles.label}>สถานะ</Text>
+          <View style={styles.row}>
+            <TouchableOpacity
+              style={[styles.statusChip, status === "lost" && styles.lost]}
+              onPress={() => setStatus("lost")}
+            >
+              <Text style={{ color: status === "lost" ? "#fff" : "#333" }}>
+                ของหาย
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
+            <TouchableOpacity
+              style={[styles.statusChip, status === "found" && styles.found]}
+              onPress={() => setStatus("found")}
+            >
+              <Text style={{ color: status === "found" ? "#fff" : "#333" }}>
+                พบของ
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.label}>สถานที่</Text>
-        <TextInput
-          style={styles.input}
-          value={location}
-          onChangeText={setLocation}
-        />
+          {/* Date & Time */}
+          <Text style={styles.label}>วัน</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM-DD"
+            value={date}
+            onChangeText={setDate}
+          />
+          <Text style={styles.label}>เวลา</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="HH:MM"
+            value={time}
+            onChangeText={setTime}
+          />
 
-        <Text style={styles.label}>สถานะ</Text>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.chip, status === "lost" && styles.chipLost]}
-            onPress={() => setStatus("lost")}
-          >
-            <Text style={{ color: status === "lost" ? "#fff" : "#333" }}>
-              ของหาย
-            </Text>
+          {/* Contact */}
+          <Text style={styles.label}>ช่องทางติดต่อ</Text>
+          <TextInput
+            style={styles.input}
+            value={contactInfo}
+            onChangeText={setContactInfo}
+          />
+
+          {/* Post */}
+          <TouchableOpacity style={styles.postButton} onPress={handlePost}>
+            <Text style={styles.postButtonText}>โพสต์</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.chip, status === "found" && styles.chipFound]}
-            onPress={() => setStatus("found")}
-          >
-            <Text style={{ color: status === "found" ? "#fff" : "#333" }}>
-              พบของ
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>วันที่ (เช่น 2025-09-24)</Text>
-        <TextInput style={styles.input} value={date} onChangeText={setDate} />
-
-        <Text style={styles.label}>เวลา (HH:MM)</Text>
-        <TextInput style={styles.input} value={time} onChangeText={setTime} />
-
-        <Text style={styles.label}>ช่องทางติดต่อ</Text>
-        <TextInput
-          style={styles.input}
-          value={contact}
-          onChangeText={setContact}
-        />
-
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>โพสต์</Text>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Header
-  headerBar: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#1D4ED8",
-  paddingTop: 40, // ⭐ เพิ่มตรงนี้ (ประมาณ 40 สำหรับ iPhone/Android ส่วนใหญ่)
-  paddingBottom: 16,
-  paddingHorizontal: 18,
-  shadowColor: "#000",
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 4,
-},
-
-  backArrow: {
-    fontSize: 22,
-    color: "#fff",
-    marginRight: 12,
-    fontWeight: "600",
+  container: { flex: 1, backgroundColor: "#f9fafb" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2563eb",
+    padding: 16,
   },
   headerTitle: {
-    fontSize: 18,
     color: "#fff",
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 12,
   },
-
-  // Container
-  container: {
-    padding: 18,
-    backgroundColor: "#F9FAFB",
+  form: { padding: 16 },
+  label: {
+    marginTop: 12,
+    marginBottom: 4,
+    fontWeight: "600",
+    color: "#374151",
   },
-
-  // Image Upload
-  imageRow: {
-    flexDirection: "row",
-    marginBottom: 10,
-    gap: 12,
+  input: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 9,
+    padding: 10,
+    backgroundColor: "#fff",
+    marginBottom: 12,
   },
+  row: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 12 },
   imageBox: {
-    width: 90,
-    height: 90,
+    width: 180,
+    height: 150,
     borderWidth: 1.5,
-    borderColor: "#D1D5DB",
+    borderColor: "#d1d5db",
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
     backgroundColor: "#fff",
   },
-  imagePreview: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-  },
-  hintText: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginBottom: 14,
-  },
-
-  // Label
-  label: {
-    marginBottom: 6,
-    fontWeight: "600",
-    color: "#374151",
-    fontSize: 14,
-  },
-
-  // Input
-  input: {
-    borderWidth: 1.2,
-    borderColor: "#D1D5DB",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
-    fontSize: 15,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-
-  // Chip group
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 16,
-    gap: 10,
-  },
+  previewImage: { width: 90, height: 90, borderRadius: 12 },
   chip: {
     borderWidth: 1.2,
-    borderColor: "#D1D5DB",
-    borderRadius: 22,
+    borderColor: "#2563eb",
+    borderRadius: 20,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    marginRight: 8,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
-  chipActive: {
-    backgroundColor: "#2563EB",
-    borderColor: "#2563EB",
+  chipActive: { backgroundColor: "#2563eb" },
+  statusChip: {
+    borderWidth: 1.2,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    marginRight: 8,
+    backgroundColor: "#fff",
+    borderColor: "#d1d5db",
   },
-  chipLost: {
-    backgroundColor: "#EF4444",
-    borderColor: "#EF4444",
-  },
-  chipFound: {
-    backgroundColor: "#FACC15",
-    borderColor: "#FACC15",
-  },
-
-  // Button
-  button: {
-    backgroundColor: "#2563EB",
-    paddingVertical: 16,
-    borderRadius: 10,
+  lost: { backgroundColor: "#ef4444", borderColor: "#ef4444" },
+  found: { backgroundColor: "#facc15", borderColor: "#facc15" },
+  postButton: {
+    marginTop: 24,
+    backgroundColor: "#2563eb",
+    padding: 14,
+    borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  postButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });
