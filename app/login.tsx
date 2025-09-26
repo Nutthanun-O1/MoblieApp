@@ -16,9 +16,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { supabase } from "../lib/supabaseClient"; // <- ใช้ตัวจริง
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../lib/useAuth";
 
-// สลับเป็น true ถ้าอยากข้าม DB เพื่อเดโม่เฉพาะ UI
+// toggle DEMO_MODE = true ถ้าจะทดสอบ UI โดยไม่เชื่อม DB
 const DEMO_MODE = false;
 
 export default function Login() {
@@ -26,6 +27,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
+  const { signIn } = useAuth(); // ✅ ใช้ context ของเรา
 
   const onLogin = async () => {
     if (!username.trim() || !password) {
@@ -33,15 +35,23 @@ export default function Login() {
       return;
     }
 
-    if (DEMO_MODE) {
-      router.replace("/home");
-      return;
-    }
-
     try {
       setLoading(true);
 
-      // ✅ เรียก RPC ฝั่งฐานข้อมูล (ตรวจรหัสผ่านใน DB)
+      if (DEMO_MODE) {
+        // ใส่ข้อมูลหลอกให้ครบเพื่อให้หน้าอื่นอ่านได้
+        await signIn({
+          psu_id: "admin001",
+          full_name: "Demo Admin",
+          email: "admin@example.com",
+          phone: "08x-xxx-xxxx",
+          role: "admin",
+        } as any);
+        router.replace("/admin/dashboard");
+        return;
+      }
+
+      // ✅ เรียก RPC app_login ที่คุณสร้างใน Supabase
       const { data, error } = await supabase.rpc("app_login", {
         p_psu_id: username.trim(),
         p_password: password,
@@ -56,8 +66,24 @@ export default function Login() {
         return;
       }
 
-      // สำเร็จ → ไปหน้า Home
-      router.replace("/home");
+      // ควรให้ RPC ส่งฟิลด์อย่างน้อย: psu_id, full_name, email, phone, role
+      const user = data[0];
+
+      // ✅ เก็บผู้ใช้ลง useAuth ก่อนสลับหน้า
+      await signIn({
+        psu_id: user.psu_id,
+        full_name: user.full_name ?? "",
+        email: user.email ?? "",
+        phone: user.phone ?? null,
+        role: user.role, // "admin" | "member"
+      });
+
+      // ✅ แยกเส้นทางตาม role
+      if (user.role === "admin") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/home");
+      }
     } catch (e: any) {
       Alert.alert("ข้อผิดพลาด", e?.message ?? "ไม่สามารถเข้าสู่ระบบได้");
     } finally {
@@ -76,7 +102,7 @@ export default function Login() {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ===== Header (คงดีไซน์เดิม) ===== */}
+        {/* ===== Header ===== */}
         <ImageBackground
           source={require("../assets/images/header.jpg")}
           style={[styles.header, { paddingTop: insets.top + 12 }]}
@@ -84,19 +110,13 @@ export default function Login() {
         >
           <View style={styles.headerOverlay} />
           <View style={styles.headerInner}>
-            <Image
-              source={require("../assets/images/PSU-logo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Image source={require("../assets/images/PSU-logo.png")} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>ของหายได้คืน</Text>
-            <Text style={styles.subtitle}>
-              ระบบประกาศของหาย/พบของ สำหรับนักศึกษาและบุคลากร
-            </Text>
+            <Text style={styles.subtitle}>ระบบประกาศของหาย/พบของ สำหรับนักศึกษาและบุคลากร</Text>
           </View>
         </ImageBackground>
 
-        {/* ===== Form Card (ไม่ทับ header) ===== */}
+        {/* ===== Form Card ===== */}
         <View style={[styles.container, { marginTop: 12 }]}>
           <View style={styles.card}>
             <Text style={styles.label}>ชื่อผู้ใช้ (username)</Text>
@@ -108,7 +128,7 @@ export default function Login() {
               onChangeText={setUsername}
               autoCapitalize="none"
               autoCorrect={false}
-              inputMode="text"           // พิมพ์ได้ทั้งตัวอักษร/ตัวเลข
+              inputMode="text"
               textContentType="username"
               returnKeyType="next"
             />
@@ -131,29 +151,25 @@ export default function Login() {
               disabled={loading}
               activeOpacity={0.9}
             >
-              <Text style={styles.primaryBtnText}>
-                {loading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
-              </Text>
+              <Text style={styles.primaryBtnText}>{loading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}</Text>
             </TouchableOpacity>
 
             <Text style={styles.noteText}>* ใช้บัญชีมหาวิทยาลัย (SSO) เท่านั้น</Text>
           </View>
 
-          {/* Divider */}
+          {/* ===== Divider ===== */}
           <View style={styles.dividerRow}>
             <View style={styles.divider} />
             <Text style={styles.dividerText}>หรือ</Text>
             <View style={styles.divider} />
           </View>
 
-          {/* ===== External (คนนอก PSU) ===== */}
+          {/* ===== External Contact ===== */}
           <View style={styles.external}>
             <Text style={styles.extTitle}>
               สำหรับบุคคลภายนอก <Text style={{ fontWeight: "900" }}>(คนนอก PSU)</Text>
             </Text>
-            <Text style={styles.extDesc}>
-              บุคคลภายนอกไม่มีสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อหน่วยงานที่รับผิดชอบ
-            </Text>
+            <Text style={styles.extDesc}>บุคคลภายนอกไม่มีสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อหน่วยงานที่รับผิดชอบ</Text>
 
             <View style={styles.extRow}>
               <View style={styles.extBox}>
@@ -169,9 +185,7 @@ export default function Login() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.extBoxTitle}>อีเมลหน่วยงาน</Text>
                   <View style={styles.emailPillWrap}>
-                    <Text numberOfLines={1} style={styles.emailPill}>
-                      student.affairs@psu.ac.th
-                    </Text>
+                    <Text numberOfLines={1} style={styles.emailPill}>student.affairs@psu.ac.th</Text>
                   </View>
                 </View>
               </View>
@@ -188,7 +202,6 @@ export default function Login() {
 const R = 16;
 
 const styles = StyleSheet.create({
-  // Header
   header: { height: 240, justifyContent: "flex-end" },
   headerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
   headerInner: { paddingHorizontal: 20, paddingBottom: 28 },
@@ -196,7 +209,6 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 28, fontWeight: "900" },
   subtitle: { color: "#E5E7EB", fontSize: 13, marginTop: 6 },
 
-  // Card
   container: { alignItems: "center", paddingHorizontal: 16 },
   card: {
     width: "100%",
@@ -231,12 +243,10 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: "#fff", fontWeight: "900", fontSize: 16 },
   noteText: { color: "#8A97A8", fontSize: 12, marginTop: 10, textAlign: "center" },
 
-  // Divider
   dividerRow: { flexDirection: "row", alignItems: "center", marginTop: 14, marginBottom: 6, paddingHorizontal: 8 },
   divider: { flex: 1, height: 1, backgroundColor: "#E8EEF6" },
   dividerText: { color: "#9CA3AF", paddingHorizontal: 10, fontSize: 12 },
 
-  // External/help section
   external: {
     width: "100%",
     maxWidth: 480,
