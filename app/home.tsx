@@ -170,49 +170,52 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* List */}
-      <ScrollView style={{ flex: 1, padding: 12 }}>
-        {filtered.map((item) => (
-          <View key={item.item_id} style={styles.card}>
-            <View style={{ flexDirection: "row" }}>
-              {/* ✅ แสดงรูปแทน Placeholder */}
-              {item.item_photos && item.item_photos.length > 0 ? (
-                <Image
-                  source={{ uri: item.item_photos[0].photo_url }}
-                  style={styles.imageThumb}
-                />
-              ) : (
-                <View style={styles.imagePlaceholder} />
-              )}
-              <View style={{ flex: 1 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  {renderBadge(item.status)}
-                </View>
-                <Text style={styles.cardDesc}>{item.location}</Text>
-                <Text style={styles.cardMeta}>
-                  วันหาย: {formatDateTime(item.post_time)}
-                </Text>
-                {item.due_time && (
-                  <Text style={styles.cardMeta}>
-                    เวลาที่นัดหมาย: {formatDateTime(item.due_time)}
-                  </Text>
-                )}
-                {item.contact_info && (
-                  <Text style={styles.cardMeta}>
-                    ติดต่อ: {item.contact_info}
-                  </Text>
-                )}
-              </View>
-            </View>
+    {/* List */}
+<ScrollView style={{ flex: 1, padding: 12 }}>
+  {filtered.map((item) => (
+    <TouchableOpacity
+      key={item.item_id}
+      style={styles.card}
+      onPress={() => navigation.navigate("DetailScreen", { item_id: item.item_id })}
+    >
+      <View style={{ flexDirection: "row" }}>
+        {/* ✅ แสดงรูปแทน Placeholder */}
+        {item.item_photos && item.item_photos.length > 0 ? (
+          <Image
+            source={{ uri: item.item_photos[0].photo_url }}
+            style={styles.imageThumb}
+          />
+        ) : (
+          <View style={styles.imagePlaceholder} />
+        )}
+        <View style={{ flex: 1 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            {renderBadge(item.status)}
           </View>
-        ))}
-      </ScrollView>
+          <Text style={styles.cardDesc}>{item.location}</Text>
+          <Text style={styles.cardMeta}>
+            วันหาย: {formatDateTime(item.post_time)}
+          </Text>
+          {item.due_time && (
+            <Text style={styles.cardMeta}>
+              เวลาที่นัดหมาย: {formatDateTime(item.due_time)}
+            </Text>
+          )}
+          {item.contact_info && (
+            <Text style={styles.cardMeta}>ติดต่อ: {item.contact_info}</Text>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
+
 
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomBar}>
