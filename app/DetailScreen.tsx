@@ -163,7 +163,15 @@ export default function DetailScreen() {
         )}
 
         {/* Action Buttons */}
-        <TouchableOpacity style={styles.actionBtn}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() =>
+            navigation.navigate("UpdateStatusScreen", {
+              item_id: item.item_id,
+              currentStatus: item.status,
+            })
+          }
+        >
           <Text style={styles.actionBtnText}>อัปเดตสถานะ</Text>
         </TouchableOpacity>
 
@@ -178,6 +186,35 @@ export default function DetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* ✅ Bottom Navigation */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.bottomTab}
+          onPress={() => navigation.navigate("HomeScreen")}
+        >
+          <Ionicons name="home" size={22} color="#6B7280" />
+          <Text style={styles.bottomText}>หน้าหลัก</Text>
+        </TouchableOpacity>
+
+        <View style={{ width: 60 }} />
+
+        <TouchableOpacity
+          style={styles.bottomTab}
+          onPress={() => navigation.navigate("ProfileScreen")}
+        >
+          <Ionicons name="person" size={22} color="#6B7280" />
+          <Text style={styles.bottomText}>โปรไฟล์</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ✅ Floating Plus Button */}
+      <TouchableOpacity
+        style={styles.plusButton}
+        onPress={() => navigation.navigate("PostScreen")}
+      >
+        <Ionicons name="add" size={32} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -306,4 +343,45 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   secondaryBtnText: { fontWeight: "600", color: "#374151", fontSize: 14 },
+
+  bottomBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: 64,
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#fff",
+    paddingHorizontal: 40,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bottomTab: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+  },
+  bottomText: {
+    fontSize: 12,
+    marginTop: 3,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  plusButton: {
+    position: "absolute",
+    bottom: 34,
+    alignSelf: "center",
+    backgroundColor: "#2563EB",
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
 });
