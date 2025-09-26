@@ -239,63 +239,86 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
-  header: {
-    backgroundColor: "#1D4ED8",
-    paddingTop: 16,
-    paddingBottom: 20,
-    paddingHorizontal: 24,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB", // พื้นหลังโทนอ่อน อ่านง่าย
   },
-  headerTitle: { color: "#fff", fontSize: 20, fontWeight: "800" },
+
+  header: {
+    backgroundColor: "#2563EB", // ฟ้าน้ำเงิน primary
+    paddingTop: 16,
+    paddingBottom: 18,
+    paddingHorizontal: 20, // ลดจาก 26 -> 20 เพื่อไม่ให้มันชิดเกิน
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+    textAlign: "left", // ชิดซ้าย
+    marginLeft: 4, // ขยับเข้ามานิดเพื่อไม่ให้ชิดขอบเกิน
+  },
+
   statsRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 16,
-    paddingHorizontal: 12,
+    justifyContent: "space-between",
+    marginVertical: 18,
+    paddingHorizontal: 16,
   },
   statCard: {
     flex: 1,
     marginHorizontal: 6,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 12,
+    padding: 16,
     alignItems: "center",
     backgroundColor: "#fff",
     shadowColor: "#000",
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
   },
-  statNumber: { fontSize: 22, fontWeight: "800" },
-  statLabel: { fontSize: 13, marginTop: 6, color: "#4B5563" },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  statLabel: {
+    fontSize: 13,
+    marginTop: 6,
+    color: "#6B7280",
+  },
+
   searchInput: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 12,
     fontSize: 14,
     backgroundColor: "#fff",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 1,
   },
+
   searchResults: {
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 8,
-    marginTop: 4,
-    maxHeight: 200,
+    borderRadius: 10,
+    marginTop: 6,
+    maxHeight: 220,
   },
   searchResultItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
   },
+
   filtersRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -305,21 +328,31 @@ const styles = StyleSheet.create({
   filterBtn: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 18,
     backgroundColor: "#E5E7EB",
   },
-  filterBtnActive: { backgroundColor: "#1D4ED8" },
-  filterText: { color: "#374151", fontSize: 13, fontWeight: "500" },
-  filterTextActive: { color: "#fff", fontWeight: "700" },
+  filterBtnActive: {
+    backgroundColor: "#2563EB",
+  },
+  filterText: {
+    color: "#374151",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  filterTextActive: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
   card: {
     backgroundColor: "#fff",
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 14,
     marginBottom: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   imagePlaceholder: {
     width: 56,
@@ -335,9 +368,23 @@ const styles = StyleSheet.create({
     marginRight: 12,
     backgroundColor: "#E5E7EB",
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  cardDesc: { color: "#374151", marginTop: 4, fontSize: 14 },
-  cardMeta: { color: "#6B7280", fontSize: 12, marginTop: 4 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  cardDesc: {
+    color: "#374151",
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  cardMeta: {
+    color: "#6B7280",
+    fontSize: 12,
+    marginTop: 4,
+  },
+
   badge: {
     color: "#fff",
     paddingHorizontal: 10,
@@ -346,7 +393,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     overflow: "hidden",
     fontWeight: "600",
+    backgroundColor: "#10B981", // เขียวสด
+    alignSelf: "flex-start",
   },
+
   bottomBar: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -355,27 +405,38 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#fff",
-    paddingHorizontal: 50,
+    paddingHorizontal: 40,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  bottomTab: { alignItems: "center", justifyContent: "center", flex: 1 },
-  bottomText: { fontSize: 12, marginTop: 3, color: "#6B7280", fontWeight: "500" },
+  bottomTab: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+  },
+  bottomText: {
+    fontSize: 12,
+    marginTop: 3,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
   plusButton: {
     position: "absolute",
-    bottom: 36,
+    bottom: 34,
     alignSelf: "center",
     backgroundColor: "#2563EB",
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
 });
+

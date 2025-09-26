@@ -291,59 +291,98 @@ async function handlePost() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
+
+  // 🔵 Header แบบเต็มสวยๆ
   header: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#2563eb",
-    padding: 16,
+    paddingTop: 40, // ทำให้ header ลงมาลึกกว่าเดิม
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
   headerTitle: {
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 12,
+    fontSize: 22,
+    fontWeight: "900",
+    marginLeft: 14,
+    letterSpacing: 0.5,
   },
-  form: { padding: 16 },
+
+  // 📋 Form และ Label
+  form: { padding: 18 },
   label: {
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 14,
+    marginBottom: 6,
     fontWeight: "600",
     color: "#374151",
+    fontSize: 15,
   },
   input: {
     borderWidth: 1,
     borderColor: "#d1d5db",
-    borderRadius: 9,
-    padding: 10,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
     backgroundColor: "#fff",
-    marginBottom: 12,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  row: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 12 },
+
+  // 📦 Image Upload Box
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 12,
+  },
   imageBox: {
-    width: 180,
-    height: 150,
+    width: 190,
+    height: 160,
     borderWidth: 1.5,
     borderColor: "#d1d5db",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  previewImage: { width: 90, height: 90, borderRadius: 12 },
+  previewImage: { width: 100, height: 100, borderRadius: 14 },
+
+  // 🟦 Chips (ตัวเลือก)
   chip: {
     borderWidth: 1.2,
     borderColor: "#2563eb",
-    borderRadius: 20,
+    borderRadius: 22,
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     marginRight: 8,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   chipActive: { backgroundColor: "#2563eb" },
+
+  // 🟨 สถานะ Lost / Found
   statusChip: {
     borderWidth: 1.2,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingVertical: 8,
     paddingHorizontal: 20,
     marginRight: 8,
@@ -352,12 +391,24 @@ const styles = StyleSheet.create({
   },
   lost: { backgroundColor: "#ef4444", borderColor: "#ef4444" },
   found: { backgroundColor: "#facc15", borderColor: "#facc15" },
+
+  // ✅ Post Button
   postButton: {
-    marginTop: 24,
+    marginTop: 28,
     backgroundColor: "#2563eb",
-    padding: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  postButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  postButtonText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
 });
+
