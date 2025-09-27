@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-nati
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabaseClient";
 
-export default function ProfileScreen() {
+function ProfileScreen() {
   const router = useRouter();
 
   const [user, setUser] = React.useState<any>(null);
@@ -73,6 +73,8 @@ export default function ProfileScreen() {
                 ? "#FFF4D9"
                 : "#E0F8EC",
           });
+          
+          module.exports = ProfileScreen;
         }
       }
       setStats(results);
@@ -137,31 +139,35 @@ export default function ProfileScreen() {
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          {stats.map((s, idx) => (
-            <View key={idx} style={[styles.statBox, { backgroundColor: s.color }]}>
-              <Text style={styles.statNum}>{s.count}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
+          {stats.map((s: any, idx: number) => (
+            <React.Fragment key={idx}>
+              <View style={[styles.statBox, { backgroundColor: s.color }]}>
+                <Text style={styles.statNum}>{s.count}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </View>
+            </React.Fragment>
           ))}
         </View>
 
         {/* Posts */}
         <Text style={styles.sectionTitle}>ประกาศของฉัน</Text>
-        {posts.map((p) => (
-          <View key={p.item_id} style={styles.postCard}>
-            <View style={styles.postImage} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.postTitle}>{p.title}</Text>
-              <Text style={styles.postText}>Item ID: {p.item_id}</Text>
-              <Text style={styles.postText}>พิกัด: {p.location}</Text>
-              <Text style={styles.postText}>
-                เวลา {new Date(p.post_time).toLocaleTimeString()}
-              </Text>
-              <Text style={[styles.postStatus, { color: p.status === "ของหาย" ? "#EA4335" : "#34A853" }]}>
-                {p.status}
-              </Text>
+        {posts.map((p: { item_id: string; title: string; location: string; post_time: string; status: string }) => (
+          <React.Fragment key={p.item_id}>
+            <View style={styles.postCard}>
+              <View style={styles.postImage} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.postTitle}>{p.title}</Text>
+                <Text style={styles.postText}>Item ID: {p.item_id}</Text>
+                <Text style={styles.postText}>พิกัด: {p.location}</Text>
+                <Text style={styles.postText}>
+                  เวลา {new Date(p.post_time).toLocaleTimeString()}
+                </Text>
+                <Text style={[styles.postStatus, { color: p.status === "ของหาย" ? "#EA4335" : "#34A853" }]}>
+                  {p.status}
+                </Text>
+              </View>
             </View>
-          </View>
+          </React.Fragment>
         ))}
 
         {/* Settings */}

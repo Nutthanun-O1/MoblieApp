@@ -12,7 +12,7 @@ import ProfileScreen  from "./profile";
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -21,8 +21,10 @@ export default function App() {
         <Stack.Screen name="Search" component={SearchScreen} /> 
         <Stack.Screen name="Detail" component={DetailScreen} />
         <Stack.Screen name="UpdateStatus" component={UpdateStatusScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="profile" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+export default App;

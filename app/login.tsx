@@ -39,7 +39,6 @@ export default function Login() {
       setLoading(true);
 
       if (DEMO_MODE) {
-        // ใส่ข้อมูลหลอกให้ครบเพื่อให้หน้าอื่นอ่านได้
         await signIn({
           psu_id: "admin001",
           full_name: "Demo Admin",
@@ -51,7 +50,7 @@ export default function Login() {
         return;
       }
 
-      // ✅ เรียก RPC app_login ที่คุณสร้างใน Supabase
+      // ✅ RPC ตรวจล็อกอิน (ต้องมีใน DB และติดตั้ง pgcrypto + เก็บ bcrypt)
       const { data, error } = await supabase.rpc("app_login", {
         p_psu_id: username.trim(),
         p_password: password,
@@ -66,7 +65,6 @@ export default function Login() {
         return;
       }
 
-      // ควรให้ RPC ส่งฟิลด์อย่างน้อย: psu_id, full_name, email, phone, role
       const user = data[0];
 
       // ✅ เก็บผู้ใช้ลง useAuth ก่อนสลับหน้า
@@ -78,11 +76,12 @@ export default function Login() {
         role: user.role, // "admin" | "member"
       });
 
-      // ✅ แยกเส้นทางตาม role
-      if (user.role === "admin") {
+      // ✅ สลับเส้นทางตามบทบาท
+      const role = String(user.role || "member").toLowerCase();
+      if (role === "admin") {
         router.replace("/admin/dashboard");
       } else {
-        router.replace("/home");
+        router.replace("/home"); // ให้มีไฟล์ app/home.tsx
       }
     } catch (e: any) {
       Alert.alert("ข้อผิดพลาด", e?.message ?? "ไม่สามารถเข้าสู่ระบบได้");
