@@ -7,7 +7,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
 export default function AnnouncementScreen() {
   const [selectedOption, setSelectedOption] = useState<'self_7days' | 'drop_off'>('self_7days');

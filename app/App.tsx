@@ -8,7 +8,7 @@ import PostScreen from "./PostScreen";
 import SearchScreen from "./SearchScreen"; 
 import DetailScreen from "./DetailScreen";
 import UpdateStatusScreen from "./UpdateStatusScreen";
-import ProfileScreen  from "./profile";
+import ProfileScreen  from "./Profile";
 
 const Stack = createNativeStackNavigator();
 
