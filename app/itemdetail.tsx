@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 // ⚠️ สำคัญ: ต้องแน่ใจว่า path นี้ถูกต้อง
-import { supabase } from '../utils/supabase'; 
+import { supabase } from '../lib/supabase'; 
 
 // ฟังก์ชันช่วยในการจัดรูปแบบวันที่และเวลา
 const formatDateTime = (isoString) => {
