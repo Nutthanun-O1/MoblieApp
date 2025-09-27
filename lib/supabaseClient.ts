@@ -1,12 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
-import Constants from 'expo-constants';
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = Constants.expoConfig.extra.supabaseUrl;
-const supabaseKey = Constants.expoConfig.extra.supabaseKey;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("❌ Missing Supabase env");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

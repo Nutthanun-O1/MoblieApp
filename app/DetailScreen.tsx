@@ -175,23 +175,14 @@ export default function DetailScreen() {
           <Text style={styles.actionBtnText}>อัปเดตสถานะ</Text>
         </TouchableOpacity>
 
-        <View style={styles.row}>
-          <TouchableOpacity style={styles.secondaryBtn}>
-            <Ionicons name="share-social-outline" size={18} color="#374151" />
-            <Text style={styles.secondaryBtnText}>แชร์ประกาศ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn}>
-            <Ionicons name="chatbubbles-outline" size={18} color="#374151" />
-            <Text style={styles.secondaryBtnText}>ติดต่อหน่วยงาน</Text>
-          </TouchableOpacity>
-        </View>
+        
       </ScrollView>
 
       {/* ✅ Bottom Navigation */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.bottomTab}
-          onPress={() => navigation.navigate("HomeScreen")}
+          onPress={() => navigation.navigate("home")}
         >
           <Ionicons name="home" size={22} color="#6B7280" />
           <Text style={styles.bottomText}>หน้าหลัก</Text>
@@ -201,7 +192,7 @@ export default function DetailScreen() {
 
         <TouchableOpacity
           style={styles.bottomTab}
-          onPress={() => navigation.navigate("ProfileScreen")}
+          onPress={() => navigation.navigate("Profile")}
         >
           <Ionicons name="person" size={22} color="#6B7280" />
           <Text style={styles.bottomText}>โปรไฟล์</Text>

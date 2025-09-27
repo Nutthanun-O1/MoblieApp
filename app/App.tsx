@@ -9,6 +9,7 @@ import SearchScreen from "./SearchScreen";
 import DetailScreen from "./DetailScreen";
 import UpdateStatusScreen from "./UpdateStatusScreen";
 import ProfileScreen  from "./Profile";
+import EditProfileScreen from "./EditProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,7 +22,8 @@ function App() {
         <Stack.Screen name="Search" component={SearchScreen} /> 
         <Stack.Screen name="Detail" component={DetailScreen} />
         <Stack.Screen name="UpdateStatus" component={UpdateStatusScreen} />
-        <Stack.Screen name="profile" component={ProfileScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
