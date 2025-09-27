@@ -224,10 +224,15 @@ export default function HomeScreen() {
           <Text style={[styles.bottomText, { color: "#2563EB" }]}>หน้าหลัก</Text>
         </TouchableOpacity>
         <View style={{ width: 60 }} />
-        <TouchableOpacity style={styles.bottomTab}>
-          <Ionicons name="person" size={22} color="#6B7280" />
-          <Text style={styles.bottomText}>โปรไฟล์</Text>
-        </TouchableOpacity>
+  <TouchableOpacity
+  style={styles.bottomTab}
+  onPress={() => navigation.navigate("Profile")} // 👈 เพิ่ม navigate
+>
+  <Ionicons name="person" size={22} color="#6B7280" />
+  <Text style={styles.bottomText}>โปรไฟล์</Text>
+</TouchableOpacity>
+
+
       </View>
 
       {/* Floating Plus Button */}

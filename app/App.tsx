@@ -8,6 +8,7 @@ import PostScreen from "./PostScreen";
 import SearchScreen from "./SearchScreen"; 
 import DetailScreen from "./DetailScreen";
 import UpdateStatusScreen from "./UpdateStatusScreen";
+import ProfileScreen  from "./profile";
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ export default function App() {
         <Stack.Screen name="Search" component={SearchScreen} /> 
         <Stack.Screen name="Detail" component={DetailScreen} />
         <Stack.Screen name="UpdateStatus" component={UpdateStatusScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
