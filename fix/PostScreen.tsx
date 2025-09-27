@@ -15,15 +15,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import uuid from "react-native-uuid";
 import { supabase } from "../lib/supabaseClient";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useAuth } from "../lib/useAuth";
-import uuid from "react-native-uuid";
-import * as FileSystem from "expo-file-system";
 
 export default function PostScreen() {
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
 
   // states
   const [title, setTitle] = useState("");
@@ -34,11 +31,11 @@ export default function PostScreen() {
   const [contactInfo, setContactInfo] = useState("");
   const [image, setImage] = useState<string | null>(null);
 
-  // date & time
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  // Date/Time
+  const [date, setDate] = useState<Date | null>(null);
+  const [showDate, setShowDate] = useState(false);
+  const [time, setTime] = useState<Date | null>(null);
+  const [showTime, setShowTime] = useState(false);
 
   const categories = [
     { key: "card", label: "บัตร" },
@@ -46,33 +43,6 @@ export default function PostScreen() {
     { key: "equipment", label: "อุปกรณ์" },
     { key: "other", label: "อื่น ๆ" },
   ];
-
-  // ✅ generate item_id (รันตามปี)
-  async function generateItemId(status: string) {
-    const prefix = status === "lost" ? "l" : "f";
-    const year = new Date().getFullYear().toString().slice(-2); // "25"
-
-    const { data, error } = await supabase
-      .from("items")
-      .select("item_id")
-      .like("item_id", `${prefix}${year}%`)
-      .order("item_id", { ascending: false })
-      .limit(1);
-
-    if (error) throw error;
-
-    let running = 1;
-    if (data && data.length > 0 && data[0] && typeof data[0].item_id === "string") {
-      const lastId = data[0].item_id; // เช่น "f2507"
-      const lastNum = parseInt(lastId.slice(3)); // ตัด prefix+ปี → เลขรัน
-      if (!Number.isNaN(lastNum)) {
-        running = lastNum + 1;
-      }
-    }
-
-    const runningStr = running.toString().padStart(2, "0");
-    return `${prefix}${year}${runningStr}`;
-  }
 
   // 📷 เลือกรูป
   const pickImage = async () => {
@@ -83,69 +53,53 @@ export default function PostScreen() {
     });
     if (!result.canceled) {
       const uri = result.assets?.[0]?.uri;
-      if (uri) setImage(uri);
+      if (uri) {
+        setImage(uri);
+      }
     }
   };
-
-  // 📤 upload image ไป Supabase Storage
-  async function uploadImage(imageUri: string, item_id: string, psu_id: string) {
-    try {
-      const fileExt = imageUri.split(".").pop() || "jpg";
-      const fileName = `${item_id}_${Date.now()}.${fileExt}`;
-      const filePath = `items/${fileName}`;
-
-      // ✅ อ่านไฟล์เป็น base64
-      const base64 = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: "base64",
-      });
-
-      // ✅ แปลง base64 → Uint8Array
-      const fileData = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-
-      // อัปโหลดขึ้น Supabase
-      const { error: uploadError } = await supabase.storage
-        .from("item-photos")
-        .upload(filePath, fileData, {
-          contentType: `image/${fileExt}`,
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // ดึง public URL
-      const { data } = supabase.storage.from("item-photos").getPublicUrl(filePath);
-      return data.publicUrl;
-    } catch (err) {
-      console.error("Upload error:", err);
-      return null;
-    }
-  }
 
   // 🚀 กดโพสต์
   async function handlePost() {
     try {
-      if (!title || !location || !contactInfo || !selectedDate || !selectedTime) {
+      if (!title || !location || !contactInfo || !date || !time) {
         Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
         return;
       }
 
-      if (!user) {
-        Alert.alert("Error", "กรุณาเข้าสู่ระบบก่อนโพสต์");
+      // ✅ รวมวัน+เวลา
+      const combinedDate = new Date(date);
+      combinedDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
+
+      if (isNaN(combinedDate.getTime())) {
+        Alert.alert("Error", "รูปแบบวันหรือเวลาไม่ถูกต้อง");
         return;
       }
 
-      const psu_id = user.psu_id;
-      const item_id = await generateItemId(status);
+      // ✅ ดึง session ของผู้ใช้
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        Alert.alert("Error", "กรุณาเข้าสู่ระบบก่อนโพสต์");
+        return;
+      }
+      const user = sessionData.session.user;
 
-      // รวมวัน+เวลา
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-      const day = String(selectedDate.getDate()).padStart(2, "0");
-      const hours = String(selectedTime.getHours()).padStart(2, "0");
-      const minutes = String(selectedTime.getMinutes()).padStart(2, "0");
-      const post_time = new Date(`${year}-${month}-${day}T${hours}:${minutes}:00`);
+      // ✅ หา psu_id จาก users table
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("psu_id")
+        .eq("email", user.email)
+        .single();
 
-      // ✅ insert items
+      if (userError || !userData) {
+        Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ในระบบ");
+        return;
+      }
+
+      const psu_id = userData.psu_id;
+      const item_id = uuid.v4().toString();
+
+      // ✅ insert ข้อมูล items
       const { error: insertError } = await supabase.from("items").insert([
         {
           item_id,
@@ -155,39 +109,53 @@ export default function PostScreen() {
           status,
           location,
           posted_by: psu_id,
-          post_time,
+          post_time: combinedDate,
           contact_info: contactInfo,
         },
       ]);
       if (insertError) throw insertError;
 
-      // ✅ upload image
+      // ✅ ถ้ามีรูป -> upload ไป storage + บันทึก item_photos
       if (image) {
-        const photo_id = uuid.v4() as string;
-        const photo_url = await uploadImage(image, item_id, psu_id);
-        if (photo_url) {
+        let fileExt = image.split(".").pop()?.toLowerCase();
+        if (!fileExt || fileExt.length > 5) {
+          fileExt = "jpg"; // fallback ถ้าไม่มีนามสกุล
+        }
+
+        const filePath = `${item_id}_${Date.now()}.${fileExt}`;
+
+        const imgRes = await fetch(image);
+        const blob = await imgRes.blob();
+
+        const { error: uploadError } = await supabase.storage
+          .from("item-photos")
+          .upload(filePath, blob, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("item-photos")
+          .getPublicUrl(filePath);
+
+        if (publicUrlData?.publicUrl) {
           await supabase.from("item_photos").insert([
             {
-              photo_id,
               item_id,
-              photo_url,
-              order: 1,
-              caption: status === "found" ? "ฝากศูนย์" : "ภาพตัวอย่าง",
+              photo_url: publicUrlData.publicUrl,
               uploaded_by: psu_id,
-              uploaded_at: new Date().toISOString(),
             },
           ]);
         }
       }
 
-      // ✅ กรณีโพสต์ found → เพิ่ม activity_hours
+      // ✅ ถ้าโพสต์เป็น "found" → เพิ่ม activity_hours อัตโนมัติ
       if (status === "found") {
         const { error: hoursError } = await supabase.from("activity_hours").insert([
           {
             psu_id,
             item_id,
-            hours: 2,
-            reason: "dropped_at_center",
+            hours: 2, // ค่า default
+            reason: "dropped_at_center", // หรือ "returned_to_owner"
             verified_by: null,
           },
         ]);
@@ -213,6 +181,7 @@ export default function PostScreen() {
         <Text style={styles.headerTitle}>ประกาศของหาย/พบของ</Text>
       </SafeAreaView>
 
+      {/* ✅ KeyboardAvoidingView ป้องกันคีย์บอร์ดบัง */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -227,7 +196,9 @@ export default function PostScreen() {
           {/* Upload */}
           <Text style={styles.label}>อัปโหลดรูปภาพ</Text>
           <View style={styles.row}>
-            {image && <Image source={{ uri: image }} style={styles.previewImage} />}
+            {image && (
+              <Image source={{ uri: image }} style={styles.previewImage} />
+            )}
             <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
               <Text style={{ fontSize: 28, color: "#888" }}>+</Text>
             </TouchableOpacity>
@@ -235,7 +206,11 @@ export default function PostScreen() {
 
           {/* Title */}
           <Text style={styles.label}>ชื่อสิ่งของ</Text>
-          <TextInput style={styles.input} value={title} onChangeText={setTitle} />
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+          />
 
           {/* Description */}
           <Text style={styles.label}>รายละเอียด</Text>
@@ -252,10 +227,15 @@ export default function PostScreen() {
             {categories.map((c) => (
               <TouchableOpacity
                 key={c.key}
-                style={[styles.chip, category === c.key && styles.chipActive]}
+                style={[
+                  styles.chip,
+                  category === c.key && styles.chipActive,
+                ]}
                 onPress={() => setCategory(c.key)}
               >
-                <Text style={{ color: category === c.key ? "#fff" : "#2563eb" }}>
+                <Text
+                  style={{ color: category === c.key ? "#fff" : "#2563eb" }}
+                >
                   {c.label}
                 </Text>
               </TouchableOpacity>
@@ -264,7 +244,11 @@ export default function PostScreen() {
 
           {/* Location */}
           <Text style={styles.label}>สถานที่</Text>
-          <TextInput style={styles.input} value={location} onChangeText={setLocation} />
+          <TextInput
+            style={styles.input}
+            value={location}
+            onChangeText={setLocation}
+          />
 
           {/* Status */}
           <Text style={styles.label}>สถานะ</Text>
@@ -273,54 +257,70 @@ export default function PostScreen() {
               style={[styles.statusChip, status === "lost" && styles.lost]}
               onPress={() => setStatus("lost")}
             >
-              <Text style={{ color: status === "lost" ? "#fff" : "#333" }}>ของหาย</Text>
+              <Text style={{ color: status === "lost" ? "#fff" : "#333" }}>
+                ของหาย
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.statusChip, status === "found" && styles.found]}
               onPress={() => setStatus("found")}
             >
-              <Text style={{ color: status === "found" ? "#fff" : "#333" }}>พบของ</Text>
+              <Text style={{ color: status === "found" ? "#fff" : "#333" }}>
+                พบของ
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Date */}
+          {/* Date & Time Picker */}
           <Text style={styles.label}>วัน</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-            <Text>{selectedDate ? selectedDate.toISOString().split("T")[0] : "เลือกวัน"}</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowDate(true)}
+          >
+            <Text>{date ? date.toISOString().split("T")[0] : "เลือกวัน"}</Text>
           </TouchableOpacity>
-          {showDatePicker && (
+          {showDate && (
             <DateTimePicker
-              value={selectedDate || new Date()}
+              value={date || new Date()}
               mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event, date) => {
-                setShowDatePicker(false);
-                if (date) setSelectedDate(date);
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowDate(false);
+                if (selectedDate) setDate(selectedDate);
               }}
             />
           )}
 
-          {/* Time */}
           <Text style={styles.label}>เวลา</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
-            <Text>{selectedTime ? selectedTime.toTimeString().slice(0, 5) : "เลือกเวลา"}</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowTime(true)}
+          >
+            <Text>
+              {time
+                ? time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "เลือกเวลา"}
+            </Text>
           </TouchableOpacity>
-          {showTimePicker && (
+          {showTime && (
             <DateTimePicker
-              value={selectedTime || new Date()}
+              value={time || new Date()}
               mode="time"
-              is24Hour={true}
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event, time) => {
-                setShowTimePicker(false);
-                if (time) setSelectedTime(time);
+              display="default"
+              onChange={(event, selectedTime) => {
+                setShowTime(false);
+                if (selectedTime) setTime(selectedTime);
               }}
             />
           )}
 
           {/* Contact */}
           <Text style={styles.label}>ช่องทางติดต่อ</Text>
-          <TextInput style={styles.input} value={contactInfo} onChangeText={setContactInfo} />
+          <TextInput
+            style={styles.input}
+            value={contactInfo}
+            onChangeText={setContactInfo}
+          />
 
           {/* Post */}
           <TouchableOpacity style={styles.postButton} onPress={handlePost}>
@@ -333,7 +333,10 @@ export default function PostScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -370,7 +373,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     marginBottom: 14,
   },
-  row: { flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 12 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 12,
+  },
   imageBox: {
     width: 190,
     height: 160,
