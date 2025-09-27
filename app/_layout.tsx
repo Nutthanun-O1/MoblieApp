@@ -1,8 +1,7 @@
-// app/_layout.tsx
 import React, { useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { AuthProvider, useAuth } from "../lib/useAuth";
 import { ActivityIndicator, View, Text } from "react-native";
+import { AuthProvider, useAuth } from "../lib/useAuth";
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -19,7 +18,7 @@ function ProtectedLayout() {
     }
 
     if (user && inAuthPage) {
-      router.replace(user.role === "admin" ? "/admin/dashboard" : "/home");
+      router.replace("/home");
     }
   }, [user, loading, segments, router]);
 

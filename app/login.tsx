@@ -1,4 +1,3 @@
-// app/login.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -16,82 +15,41 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/useAuth";
 
-// toggle DEMO_MODE = true ถ้าจะทดสอบ UI โดยไม่เชื่อม DB
-const DEMO_MODE = false;
-
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
-  const { signIn } = useAuth(); // ✅ ใช้ context ของเรา
+  const { signIn } = useAuth(); // ✅ เรียกจาก useAuth
 
   const onLogin = async () => {
-    if (!username.trim() || !password) {
-      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+    if (!email.trim() || !password) {
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
 
     try {
       setLoading(true);
 
-      if (DEMO_MODE) {
-        await signIn({
-          psu_id: "admin001",
-          full_name: "Demo Admin",
-          email: "admin@example.com",
-          phone: "08x-xxx-xxxx",
-          role: "admin",
-        } as any);
-        router.replace("/admin/dashboard");
-        return;
-      }
+      // ✅ ใช้ Supabase Auth
+      await signIn(email.trim(), password);
 
-      // ✅ RPC ตรวจล็อกอิน (ต้องมีใน DB และติดตั้ง pgcrypto + เก็บ bcrypt)
-      const { data, error } = await supabase.rpc("app_login", {
-        p_psu_id: username.trim(),
-        p_password: password,
-      });
-
-      if (error) {
-        Alert.alert("ล็อกอินไม่สำเร็จ", error.message);
-        return;
-      }
-      if (!data || data.length === 0) {
-        Alert.alert("ล็อกอินไม่สำเร็จ", "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-        return;
-      }
-
-      const user = data[0];
-
-      // ✅ เก็บผู้ใช้ลง useAuth ก่อนสลับหน้า
-      await signIn({
-        psu_id: user.psu_id,
-        full_name: user.full_name ?? "",
-        email: user.email ?? "",
-        phone: user.phone ?? null,
-        role: user.role, // "admin" | "member"
-      });
-
-      // ✅ สลับเส้นทางตามบทบาท
-      const role = String(user.role || "member").toLowerCase();
-      if (role === "admin") {
-        router.replace("/admin/dashboard");
-      } else {
-        router.replace("/home"); // ให้มีไฟล์ app/home.tsx
-      }
+      // ✅ ล็อกอินสำเร็จ → ไปหน้า home
+      router.replace("/home");
     } catch (e: any) {
-      Alert.alert("ข้อผิดพลาด", e?.message ?? "ไม่สามารถเข้าสู่ระบบได้");
+      Alert.alert("ล็อกอินไม่สำเร็จ", e?.message ?? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <ScrollView
         contentContainerStyle={{
@@ -109,26 +67,32 @@ export default function Login() {
         >
           <View style={styles.headerOverlay} />
           <View style={styles.headerInner}>
-            <Image source={require("../assets/images/PSU-logo.png")} style={styles.logo} resizeMode="contain" />
+            <Image
+              source={require("../assets/images/PSU-logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>ของหายได้คืน</Text>
-            <Text style={styles.subtitle}>ระบบประกาศของหาย/พบของ สำหรับนักศึกษาและบุคลากร</Text>
+            <Text style={styles.subtitle}>
+              ระบบประกาศของหาย/พบของ สำหรับนักศึกษาและบุคลากร
+            </Text>
           </View>
         </ImageBackground>
 
         {/* ===== Form Card ===== */}
         <View style={[styles.container, { marginTop: 12 }]}>
           <View style={styles.card}>
-            <Text style={styles.label}>ชื่อผู้ใช้ (username)</Text>
+            <Text style={styles.label}>อีเมล (PSU Account)</Text>
             <TextInput
               style={styles.input}
-              placeholder="username"
+              placeholder="student@mail.psu.ac.th"
               placeholderTextColor="#98A4B5"
-              value={username}
-              onChangeText={setUsername}
+              value={email}
+              onChangeText={setEmail}
               autoCapitalize="none"
               autoCorrect={false}
-              inputMode="text"
-              textContentType="username"
+              keyboardType="email-address"
+              textContentType="emailAddress"
               returnKeyType="next"
             />
 
@@ -150,47 +114,12 @@ export default function Login() {
               disabled={loading}
               activeOpacity={0.9}
             >
-              <Text style={styles.primaryBtnText}>{loading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}</Text>
+              <Text style={styles.primaryBtnText}>
+                {loading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
+              </Text>
             </TouchableOpacity>
 
-            <Text style={styles.noteText}>* ใช้บัญชีมหาวิทยาลัย (SSO) เท่านั้น</Text>
-          </View>
-
-          {/* ===== Divider ===== */}
-          <View style={styles.dividerRow}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>หรือ</Text>
-            <View style={styles.divider} />
-          </View>
-
-          {/* ===== External Contact ===== */}
-          <View style={styles.external}>
-            <Text style={styles.extTitle}>
-              สำหรับบุคคลภายนอก <Text style={{ fontWeight: "900" }}>(คนนอก PSU)</Text>
-            </Text>
-            <Text style={styles.extDesc}>บุคคลภายนอกไม่มีสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อหน่วยงานที่รับผิดชอบ</Text>
-
-            <View style={styles.extRow}>
-              <View style={styles.extBox}>
-                <View style={styles.extIconCircle}><Text style={styles.extIcon}>📞</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.extBoxTitle}>โทรติดต่อ</Text>
-                  <Text style={styles.extBoxText}>074-XXX-XXX</Text>
-                </View>
-              </View>
-
-              <View style={styles.extBox}>
-                <View style={styles.extIconCircle}><Text style={styles.extIcon}>✉️</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.extBoxTitle}>อีเมลหน่วยงาน</Text>
-                  <View style={styles.emailPillWrap}>
-                    <Text numberOfLines={1} style={styles.emailPill}>student.affairs@psu.ac.th</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <Text style={styles.extFootNote}>* เจ้าหน้าที่จะช่วยประสานงานรับ–ส่งของหายให้</Text>
+            <Text style={styles.noteText}>* ใช้ PSU email + password เท่านั้น</Text>
           </View>
         </View>
       </ScrollView>
@@ -241,56 +170,4 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: "#fff", fontWeight: "900", fontSize: 16 },
   noteText: { color: "#8A97A8", fontSize: 12, marginTop: 10, textAlign: "center" },
-
-  dividerRow: { flexDirection: "row", alignItems: "center", marginTop: 14, marginBottom: 6, paddingHorizontal: 8 },
-  divider: { flex: 1, height: 1, backgroundColor: "#E8EEF6" },
-  dividerText: { color: "#9CA3AF", paddingHorizontal: 10, fontSize: 12 },
-
-  external: {
-    width: "100%",
-    maxWidth: 480,
-    backgroundColor: "#F8FAFC",
-    borderRadius: R,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E6ECF4",
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  extTitle: { fontSize: 15, fontWeight: "800", color: "#111827", marginBottom: 6 },
-  extDesc: { color: "#4B5563", fontSize: 12, marginBottom: 12 },
-  extRow: { flexDirection: "row", columnGap: 12 },
-  extBox: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#E6ECF4",
-  },
-  extIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#EAF2FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  extIcon: { fontSize: 16, color: "#2563EB" as any },
-  extBoxTitle: { fontSize: 12, fontWeight: "900", color: "#0F172A" },
-  extBoxText: { fontSize: 12, color: "#4B5563" },
-  emailPillWrap: { flexDirection: "row", flexWrap: "wrap" },
-  emailPill: {
-    backgroundColor: "#EEF2FF",
-    color: "#1E40AF",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    fontSize: 12,
-    maxWidth: 220,
-  },
-  extFootNote: { color: "#8A97A8", fontSize: 12, marginTop: 10 },
 });
