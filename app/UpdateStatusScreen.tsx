@@ -32,8 +32,11 @@ export default function UpdateStatusScreen() {
       quality: 0.7,
     });
 
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.length) {
+      const uri = result.assets[0]?.uri;
+      if (uri) {
+        setImageUri(uri);
+      }
     }
   };
 
