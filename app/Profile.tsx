@@ -165,7 +165,7 @@ export default function ProfileScreen() {
               <View style={styles.avatar} />
               <View style={styles.infoContainer}>
                 <Text style={styles.name}>{user?.full_name ?? ""}</Text>
-                <Text style={styles.info}>รหัสนักศึกษา: {user?.psu_id ?? "-"}</Text>
+                <Text style={styles.info}>Student ID: {user?.psu_id ?? "-"}</Text>
                 <Text style={styles.info}>Email: {user?.email ?? ""}</Text>
               </View>
             </View>
