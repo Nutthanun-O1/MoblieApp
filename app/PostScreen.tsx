@@ -47,7 +47,7 @@ export default function PostScreen() {
     { key: "other", label: "อื่น ๆ" },
   ];
 
-  // ✅ generate item_id (รันตามปี)
+  // ✅ generate item_id (prefix + ปี + running)
   async function generateItemId(status: string) {
     const prefix = status === "lost" ? "l" : "f";
     const year = new Date().getFullYear().toString().slice(-2); // "25"
@@ -59,19 +59,24 @@ export default function PostScreen() {
       .order("item_id", { ascending: false })
       .limit(1);
 
-    if (error) throw error;
+    if (error) {
+      console.error("generateItemId error:", error);
+      return `${prefix}${year}01`; // fallback
+    }
 
     let running = 1;
-    if (data && data.length > 0 && data[0] && typeof data[0].item_id === "string") {
+    if (data && data.length > 0 && typeof data[0].item_id === "string") {
       const lastId = data[0].item_id; // เช่น "f2507"
-      const lastNum = parseInt(lastId.slice(3)); // ตัด prefix+ปี → เลขรัน
+      const lastNum = parseInt(lastId.slice(3));
       if (!Number.isNaN(lastNum)) {
         running = lastNum + 1;
       }
     }
 
     const runningStr = running.toString().padStart(2, "0");
-    return `${prefix}${year}${runningStr}`;
+    const newId = `${prefix}${year}${runningStr}`;
+    console.log("✅ Generated item_id:", newId);
+    return newId;
   }
 
   // 📷 เลือกรูป
@@ -94,15 +99,12 @@ export default function PostScreen() {
       const fileName = `${item_id}_${Date.now()}.${fileExt}`;
       const filePath = `items/${fileName}`;
 
-      // ✅ อ่านไฟล์เป็น base64
       const base64 = await FileSystem.readAsStringAsync(imageUri, {
         encoding: "base64",
       });
 
-      // ✅ แปลง base64 → Uint8Array
       const fileData = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
-      // อัปโหลดขึ้น Supabase
       const { error: uploadError } = await supabase.storage
         .from("item-photos")
         .upload(filePath, fileData, {
@@ -112,7 +114,6 @@ export default function PostScreen() {
 
       if (uploadError) throw uploadError;
 
-      // ดึง public URL
       const { data } = supabase.storage.from("item-photos").getPublicUrl(filePath);
       return data.publicUrl;
     } catch (err) {
@@ -136,6 +137,10 @@ export default function PostScreen() {
 
       const psu_id = user.psu_id;
       const item_id = await generateItemId(status);
+      if (!item_id) {
+        Alert.alert("Error", "ไม่สามารถสร้าง item_id ได้");
+        return;
+      }
 
       // รวมวัน+เวลา
       const year = selectedDate.getFullYear();
@@ -191,7 +196,6 @@ export default function PostScreen() {
             verified_by: null,
           },
         ]);
-
         if (hoursError) throw hoursError;
       }
 
