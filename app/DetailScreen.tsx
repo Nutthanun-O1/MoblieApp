@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../lib/useAuth"; // ✅ ใช้ user ที่ login
 
 type RootStackParamList = {
   DetailScreen: { item_id: string };
@@ -19,9 +20,10 @@ type RootStackParamList = {
 
 export default function DetailScreen() {
   const navigation = useNavigation<any>();
-  const route = useRoute<RouteProp<RootStackParamList, 'DetailScreen'>>();
+  const route = useRoute<RouteProp<RootStackParamList, "DetailScreen">>();
   const { item_id } = route.params;
 
+  const { user } = useAuth(); // ✅ ดึง user login
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -166,18 +168,20 @@ export default function DetailScreen() {
           </Text>
         </View>
 
-        {/* ✅ ปุ่มอัปเดตสถานะ */}
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() =>
-            navigation.navigate("UpdateStatusScreen", {
-              item_id: item.item_id,
-              currentStatus: item.status,
-            })
-          }
-        >
-          <Text style={styles.actionBtnText}>อัปเดตสถานะ</Text>
-        </TouchableOpacity>
+        {/* ✅ ปุ่มอัปเดตสถานะ: แสดงเฉพาะเจ้าของโพสต์ */}
+        {user && item.posted_by === user.psu_id && (
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() =>
+              navigation.navigate("UpdateStatusScreen", {
+                item_id: item.item_id,
+                currentStatus: item.status,
+              })
+            }
+          >
+            <Text style={styles.actionBtnText}>อัปเดตสถานะ</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
