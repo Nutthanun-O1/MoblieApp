@@ -25,6 +25,7 @@ export default function ProfileScreen() {
   const [posts, setPosts] = React.useState<any[]>([]);
   const [showAll, setShowAll] = React.useState(false);
   const [loadingPosts, setLoadingPosts] = React.useState(false);
+  const [sortOrder, setSortOrder] = React.useState<"desc" | "asc">("desc"); // desc = ใหม่->เก่า
 
   // --- ดึงสถิติ ---
   React.useEffect(() => {
@@ -99,10 +100,13 @@ export default function ProfileScreen() {
     fetchPosts();
   }, [user]);
 
-  const displayedPosts = showAll ? posts : posts.slice(0, 3);
-
+  // Toggle show all / collapse
   const handleToggleShow = () => setShowAll((v) => !v);
 
+  // Toggle sort order
+  const toggleSortOrder = () => setSortOrder((s) => (s === "desc" ? "asc" : "desc"));
+
+  // Logout
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -113,21 +117,26 @@ export default function ProfileScreen() {
     }
   };
 
-  // Helper: badge rendering (เหมือนหน้า Home)
+  // Sort posts by post_time according to sortOrder, then slice
+  const sortedPosts = React.useMemo(() => {
+    const arr = [...posts];
+    arr.sort((a, b) => {
+      const ta = a?.post_time ? new Date(a.post_time).getTime() : 0;
+      const tb = b?.post_time ? new Date(b.post_time).getTime() : 0;
+      return sortOrder === "desc" ? tb - ta : ta - tb;
+    });
+    return arr;
+  }, [posts, sortOrder]);
+
+  const displayedPosts = showAll ? sortedPosts : sortedPosts.slice(0, 3);
+
+  // badge render
   function renderBadge(status: string) {
     if (status === "lost")
-      return (
-        <Text style={[styles.badge, { backgroundColor: "#F87171" }]}>ของหาย</Text>
-      );
+      return <Text style={[styles.badge, { backgroundColor: "#F87171" }]}>ของหาย</Text>;
     if (status === "found")
-      return (
-        <Text style={[styles.badge, { backgroundColor: "#60A5FA" }]}>พบของ</Text>
-      );
-    return (
-      <Text style={[styles.badge, { backgroundColor: "#34D399" }]}>
-        ส่งคืนแล้ว
-      </Text>
-    );
+      return <Text style={[styles.badge, { backgroundColor: "#60A5FA" }]}>พบของ</Text>;
+    return <Text style={[styles.badge, { backgroundColor: "#34D399" }]}>ส่งคืนแล้ว</Text>;
   }
 
   function formatDateTime(ts: string) {
@@ -135,10 +144,7 @@ export default function ProfileScreen() {
     const d = new Date(ts);
     return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
       .toString()
-      .padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(
-      2,
-      "0"
-    )}:${String(d.getMinutes()).padStart(2, "0")} น.`;
+      .padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")} น.`;
   }
 
   return (
@@ -164,7 +170,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Logout button (อยู่มุมบนขวาของโปรไฟล์) */}
+            {/* Logout button (อยู่มุมบนขวาของ profileCard) */}
             <TouchableOpacity
               style={styles.profileLogoutBtn}
               onPress={handleLogout}
@@ -178,7 +184,19 @@ export default function ProfileScreen() {
           <View style={styles.statsRow}>
             {stats.map((s, idx) => (
               <View key={idx} style={[styles.statCard, { backgroundColor: s.color }]}>
-                <Text style={[styles.statNumber, { color: s.color === "#FDE2E2" ? "#DC2626" : s.color === "#FFF4D9" ? "#D97706" : "#16A34A" }]}>
+                <Text
+                  style={[
+                    styles.statNumber,
+                    {
+                      color:
+                        s.color === "#FDE2E2"
+                          ? "#DC2626"
+                          : s.color === "#FFF4D9"
+                          ? "#D97706"
+                          : "#16A34A",
+                    },
+                  ]}
+                >
                   {s.count}
                 </Text>
                 <Text style={styles.statLabel}>{s.label}</Text>
@@ -186,8 +204,19 @@ export default function ProfileScreen() {
             ))}
           </View>
 
-          {/* Posts (card style เหมือน Home) */}
-          <Text style={styles.sectionTitle}>ประกาศของฉัน</Text>
+          {/* Posts header with sort control */}
+          <View style={styles.postsHeader}>
+            <Text style={styles.sectionTitle}>ประกาศของฉัน</Text>
+
+            <TouchableOpacity style={styles.sortBtn} onPress={toggleSortOrder} accessibilityLabel="เรียงโพสต์">
+              <Ionicons
+                name={sortOrder === "desc" ? "arrow-down" : "arrow-up"}
+                size={16}
+                color="#2563EB"
+              />
+              <Text style={styles.sortText}>{sortOrder === "desc" ? "ใหม่→เก่า" : "เก่า→ใหม่"}</Text>
+            </TouchableOpacity>
+          </View>
 
           {loadingPosts && <Text style={{ marginHorizontal: 12 }}>กำลังโหลด...</Text>}
 
@@ -205,18 +234,18 @@ export default function ProfileScreen() {
                 )}
 
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <Text style={styles.cardTitle}>{item.title}</Text>
                     {renderBadge(item.status)}
                   </View>
 
-                  <Text style={styles.cardDesc}>{item.location}</Text>
+                  <Text style={styles.cardDesc} numberOfLines={1} ellipsizeMode="tail">
+                    {item.location}
+                  </Text>
 
                   <Text style={styles.cardMeta}>วันโพสต์: {formatDateTime(item.post_time)}</Text>
 
-                  {item.due_time && (
-                    <Text style={styles.cardMeta}>เวลาที่นัดหมาย: {formatDateTime(item.due_time)}</Text>
-                  )}
+                  {item.due_time && <Text style={styles.cardMeta}>เวลาที่นัดหมาย: {formatDateTime(item.due_time)}</Text>}
 
                   {item.contact_info && <Text style={styles.cardMeta}>ติดต่อ: {item.contact_info}</Text>}
                 </View>
@@ -243,8 +272,9 @@ export default function ProfileScreen() {
   );
 }
 
+// Styles (maintain home-like look)
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F9FAFB" }, // ตาม Home
+  safe: { flex: 1, backgroundColor: "#F9FAFB" },
   container: { flex: 1, backgroundColor: "#F9FAFB" },
 
   header: {
@@ -302,7 +332,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
 
-  // Stats (ใช้ style ใกล้เคียง home)
   statsRow: { flexDirection: "row", justifyContent: "space-between", marginVertical: 18, paddingHorizontal: 16 },
   statCard: {
     flex: 1,
@@ -319,9 +348,14 @@ const styles = StyleSheet.create({
   statNumber: { fontSize: 22, fontWeight: "800", color: "#111827" },
   statLabel: { fontSize: 13, marginTop: 6, color: "#6B7280" },
 
-  sectionTitle: { fontSize: 16, fontWeight: "700", margin: 12, color: "#111827" },
+  // Posts header (title + sort control)
+  postsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginHorizontal: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: "700", marginVertical: 12, color: "#111827" },
 
-  // Card styles (copy from home)
+  sortBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8 },
+  sortText: { color: "#2563EB", marginLeft: 6, fontWeight: "600", fontSize: 13 },
+
+  // Card styles (like home)
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -351,6 +385,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
+    flex: 1,
+    marginRight: 8,
   },
   cardDesc: {
     color: "#374151",
