@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
@@ -18,6 +19,7 @@ export default function UpdateStatusScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { item_id, currentStatus } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [status, setStatus] = useState(currentStatus);
   const [time, setTime] = useState("");
@@ -108,7 +110,7 @@ export default function UpdateStatusScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>

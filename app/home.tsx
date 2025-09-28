@@ -6,16 +6,17 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   FlatList,
   Image,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabaseClient";
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<any[]>([]);
   const [filter, setFilter] = useState<"all" | "lost" | "found" | "returned">(
     "all"
@@ -106,11 +107,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
-      <SafeAreaView style={styles.header}>
+      <View style={styles.header}>
         <Text style={styles.headerTitle}>หน้าหลัก</Text>
-      </SafeAreaView>
+      </View>
 
       {/* Stats */}
       <View style={styles.statsRow}>

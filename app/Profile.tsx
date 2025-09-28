@@ -7,8 +7,8 @@ import {
   ScrollView,
   Image,
   Dimensions,
-  SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabaseClient";
@@ -21,6 +21,7 @@ const BOTTOM_BAR_HEIGHT = 64;
 export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [stats, setStats] = React.useState<any[]>([]);
   const [posts, setPosts] = React.useState<any[]>([]);
   const [showAll, setShowAll] = React.useState(false);
@@ -148,7 +149,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -268,7 +269,7 @@ export default function ProfileScreen() {
           <BottomBar active="profile" />
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabaseClient";
@@ -22,6 +23,7 @@ export default function DetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, "DetailScreen">>();
   const { item_id } = route.params;
+  const insets = useSafeAreaInsets();
 
   const { user } = useAuth(); // ✅ ดึง user login
   const [item, setItem] = useState<any>(null);
@@ -63,22 +65,26 @@ export default function DetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563EB" />
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563EB" />
+        </View>
       </View>
     );
   }
 
   if (!item) {
     return (
-      <View style={styles.center}>
-        <Text>ไม่พบข้อมูล</Text>
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={styles.center}>
+          <Text>ไม่พบข้อมูล</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -173,9 +179,8 @@ export default function DetailScreen() {
           <TouchableOpacity
             style={styles.actionBtn}
             onPress={() =>
-              navigation.navigate("UpdateStatusScreen", {
+              navigation.navigate("EditPostScreen", {
                 item_id: item.item_id,
-                currentStatus: item.status,
               })
             }
           >

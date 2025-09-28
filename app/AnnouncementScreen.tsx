@@ -7,9 +7,11 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabaseClient';
 
 export default function AnnouncementScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedOption, setSelectedOption] = useState<'self_7days' | 'drop_off'>('self_7days');
   const [loading, setLoading] = useState(false);
 
@@ -46,7 +48,8 @@ export default function AnnouncementScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>ประกาศ</Text>
 
       {/* ตัวเลือก */}
@@ -111,11 +114,13 @@ export default function AnnouncementScreen() {
       <TouchableOpacity style={styles.backButton}>
         <Text style={styles.backText}>กลับไปแก้ไขโพสต์</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#fff' },
   container: { backgroundColor: '#fff', padding: 20, flexGrow: 1 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#0055FF', marginBottom: 20 },
   optionContainer: { marginBottom: 25 },

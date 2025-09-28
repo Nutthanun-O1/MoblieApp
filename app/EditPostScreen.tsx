@@ -269,9 +269,15 @@ export default function EditPostScreen() {
         }
       }
 
-      Alert.alert("สำเร็จ", "บันทึกการแก้ไขเรียบร้อย ✅", [
-        { text: "ตกลง", onPress: () => navigation.goBack() },
-      ]);
+      // Navigate to success screen
+      navigation.navigate("SuccessEditScreen", {
+        item_id,
+        title,
+        location,
+        post_time: post_time?.toISOString() || new Date().toISOString(),
+        image_url: newImageUri || existingPhotoUrl,
+        status,
+      });
     } catch (e: any) {
       console.error(e);
       Alert.alert("Error", e?.message ?? "บันทึกไม่สำเร็จ");
