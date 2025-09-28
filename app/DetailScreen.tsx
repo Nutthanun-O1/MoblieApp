@@ -9,12 +9,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabaseClient";
 
+type RootStackParamList = {
+  DetailScreen: { item_id: string };
+  UpdateStatusScreen: { item_id: string; currentStatus: string };
+};
+
 export default function DetailScreen() {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<RootStackParamList, 'DetailScreen'>>();
   const { item_id } = route.params;
 
   const [item, setItem] = useState<any>(null);
