@@ -13,8 +13,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { supabase } from "../lib/supabaseClient";
 
 export default function DetailScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { item_id } = route.params;
 
   const [item, setItem] = useState<any>(null);
@@ -22,7 +22,7 @@ export default function DetailScreen() {
 
   useEffect(() => {
     fetchItem();
-  }, [item_id]);
+  }, []);
 
   async function fetchItem() {
     setLoading(true);
@@ -38,6 +38,8 @@ export default function DetailScreen() {
         location,
         post_time,
         contact_info,
+        posted_by,
+        users:posted_by (psu_id, full_name),
         item_photos(photo_url)
       `
       )
@@ -50,30 +52,6 @@ export default function DetailScreen() {
       setItem(data);
     }
     setLoading(false);
-  }
-
-  function renderStatusChip(status: string) {
-    if (status === "lost")
-      return <Text style={[styles.statusChip, styles.lost]}>ของหาย</Text>;
-    if (status === "found")
-      return <Text style={[styles.statusChip, styles.found]}>พบของ</Text>;
-    return <Text style={[styles.statusChip, styles.returned]}>ส่งคืนแล้ว</Text>;
-  }
-
-  function formatDate(ts: string) {
-    if (!ts) return "-";
-    const d = new Date(ts);
-    return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}/${d.getFullYear()}`;
-  }
-
-  function formatTime(ts: string) {
-    if (!ts) return "-";
-    const d = new Date(ts);
-    return `${String(d.getHours()).padStart(2, "0")}:${String(
-      d.getMinutes()
-    ).padStart(2, "0")} น.`;
   }
 
   if (loading) {
@@ -97,72 +75,93 @@ export default function DetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={26} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>รายละเอียดสิ่งของ</Text>
+        <Text style={styles.headerTitle}>รายละเอียด</Text>
       </View>
 
-      <ScrollView style={{ flex: 1, padding: 18 }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Image */}
         <View style={styles.imageBox}>
-          {item.item_photos && item.item_photos.length > 0 ? (
+          {item.item_photos?.length > 0 ? (
             <Image
               source={{ uri: item.item_photos[0].photo_url }}
               style={styles.previewImage}
-              resizeMode="cover"
             />
           ) : (
-            <Ionicons name="image" size={64} color="#9CA3AF" />
+            <Ionicons name="image-outline" size={60} color="#9CA3AF" />
           )}
         </View>
 
-        {/* Title & Status */}
+        {/* Title */}
         <Text style={styles.itemTitle}>{item.title}</Text>
-        {renderStatusChip(item.status)}
 
-        {/* Info Box */}
+        {/* Status */}
+        <Text
+          style={[
+            styles.statusChip,
+            item.status === "lost"
+              ? styles.lost
+              : item.status === "found"
+              ? styles.found
+              : styles.returned,
+          ]}
+        >
+          {item.status === "lost"
+            ? "ของหาย"
+            : item.status === "found"
+            ? "เจอของ"
+            : "ส่งคืนแล้ว"}
+        </Text>
+
+        {/* Info */}
         <View style={styles.infoBox}>
-          <View style={styles.infoRow}>
-            <Ionicons name="barcode-outline" size={18} color="#2563EB" />
-            <Text style={styles.infoText}>รหัส: {item.item_id}</Text>
-          </View>
           <View style={styles.infoRow}>
             <Ionicons name="pricetag-outline" size={18} color="#2563EB" />
             <Text style={styles.infoText}>หมวดหมู่: {item.category}</Text>
           </View>
+
           <View style={styles.infoRow}>
             <Ionicons name="location-outline" size={18} color="#2563EB" />
             <Text style={styles.infoText}>สถานที่: {item.location}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={18} color="#2563EB" />
-            <Text style={styles.infoText}>
-              วันที่โพสต์: {formatDate(item.post_time)}
-            </Text>
-          </View>
+
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={18} color="#2563EB" />
             <Text style={styles.infoText}>
-              เวลาโพสต์: {formatTime(item.post_time)}
+              เวลาโพสต์: {new Date(item.post_time).toLocaleString("th-TH")}
             </Text>
           </View>
-          {item.contact_info && (
+
+          <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={18} color="#2563EB" />
+            <Text style={styles.infoText}>ติดต่อ: {item.contact_info}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="barcode-outline" size={18} color="#2563EB" />
+            <Text style={styles.infoText}>รหัส: {item.item_id}</Text>
+          </View>
+
+          {item.users && (
             <View style={styles.infoRow}>
-              <Ionicons name="call-outline" size={18} color="#2563EB" />
-              <Text style={styles.infoText}>ติดต่อ: {item.contact_info}</Text>
+              <Ionicons name="person-outline" size={18} color="#2563EB" />
+              <Text style={styles.infoText}>
+                ผู้โพสต์: {item.users.full_name} ({item.users.psu_id})
+              </Text>
             </View>
           )}
         </View>
 
         {/* Description */}
-        {item.description && (
-          <View style={styles.descBox}>
-            <Text style={styles.descTitle}>รายละเอียดเพิ่มเติม</Text>
-            <Text style={styles.descText}>{item.description}</Text>
-          </View>
-        )}
+        <View style={styles.descBox}>
+          <Text style={styles.descTitle}>รายละเอียดเพิ่มเติม</Text>
+          <Text style={styles.descText}>
+            {item.description || "ไม่มีรายละเอียดเพิ่มเติม"}
+          </Text>
+        </View>
 
-        {/* Action Buttons */}
+        {/* ✅ ปุ่มอัปเดตสถานะ */}
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() =>
@@ -174,38 +173,7 @@ export default function DetailScreen() {
         >
           <Text style={styles.actionBtnText}>อัปเดตสถานะ</Text>
         </TouchableOpacity>
-
-        
       </ScrollView>
-
-      {/* ✅ Bottom Navigation */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.bottomTab}
-          onPress={() => navigation.navigate("home")}
-        >
-          <Ionicons name="home" size={22} color="#6B7280" />
-          <Text style={styles.bottomText}>หน้าหลัก</Text>
-        </TouchableOpacity>
-
-        <View style={{ width: 60 }} />
-
-        <TouchableOpacity
-          style={styles.bottomTab}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Ionicons name="person" size={22} color="#6B7280" />
-          <Text style={styles.bottomText}>โปรไฟล์</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ✅ Floating Plus Button */}
-      <TouchableOpacity
-        style={styles.plusButton}
-        onPress={() => navigation.navigate("PostScreen")}
-      >
-        <Ionicons name="add" size={32} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -243,6 +211,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
+    overflow: "hidden",
   },
   previewImage: { width: "100%", height: "100%", borderRadius: 14 },
 
@@ -315,64 +284,4 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   actionBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-
-  row: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  secondaryBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  secondaryBtnText: { fontWeight: "600", color: "#374151", fontSize: 14 },
-
-  bottomBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    height: 64,
-    borderTopWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#fff",
-    paddingHorizontal: 40,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  bottomTab: {
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-  },
-  bottomText: {
-    fontSize: 12,
-    marginTop: 3,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  plusButton: {
-    position: "absolute",
-    bottom: 34,
-    alignSelf: "center",
-    backgroundColor: "#2563EB",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
-  },
 });
