@@ -447,4 +447,3 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 });
-

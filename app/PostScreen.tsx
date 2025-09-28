@@ -19,7 +19,8 @@ import { supabase } from "../lib/supabaseClient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useAuth } from "../lib/useAuth";
 import uuid from "react-native-uuid";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
+
 
 export default function PostScreen() {
   const navigation = useNavigation<any>();
