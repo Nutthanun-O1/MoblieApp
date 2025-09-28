@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabaseClient";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -24,6 +25,7 @@ import * as FileSystem from "expo-file-system/legacy";
 
 export default function PostScreen() {
   const navigation = useNavigation<any>();
+  const router = useRouter();
   const { user } = useAuth();
 
   // states
@@ -66,7 +68,7 @@ export default function PostScreen() {
     }
 
     let running = 1;
-    if (data && data.length > 0 && typeof data[0].item_id === "string") {
+    if (data && data.length > 0 && data[0] && typeof data[0].item_id === "string") {
       const lastId = data[0].item_id; // เช่น "f2507"
       const lastNum = parseInt(lastId.slice(3));
       if (!Number.isNaN(lastNum)) {
@@ -168,10 +170,12 @@ export default function PostScreen() {
       if (insertError) throw insertError;
 
       // ✅ upload image
+      let uploadedImageUrl = null;
       if (image) {
         const photo_id = uuid.v4() as string;
         const photo_url = await uploadImage(image, item_id, psu_id);
         if (photo_url) {
+          uploadedImageUrl = photo_url;
           await supabase.from("item_photos").insert([
             {
               photo_id,
@@ -186,22 +190,21 @@ export default function PostScreen() {
         }
       }
 
-      // ✅ กรณีโพสต์ found → เพิ่ม activity_hours
-      if (status === "found") {
-        const { error: hoursError } = await supabase.from("activity_hours").insert([
-          {
-            psu_id,
-            item_id,
-            hours: 2,
-            reason: "dropped_at_center",
-            verified_by: null,
-          },
-        ]);
-        if (hoursError) throw hoursError;
-      }
-
-      Alert.alert("สำเร็จ", "โพสต์ถูกบันทึกแล้ว ✅");
-      navigation.goBack();
+      // Navigate to confirmation screen with post data
+      router.push({
+        pathname: "/PostConfirmationScreen",
+        params: {
+          item_id,
+          title,
+          description,
+          category,
+          status,
+          location,
+          contact_info: contactInfo,
+          post_time: post_time.toISOString(),
+          image_url: uploadedImageUrl,
+        },
+      });
     } catch (err: any) {
       console.error("โพสต์ error:", err);
       Alert.alert("Error", err.message || "เกิดข้อผิดพลาด");

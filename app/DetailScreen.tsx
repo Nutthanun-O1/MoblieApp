@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/useAuth"; // ✅ ใช้ user ที่ login
 
