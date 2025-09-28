@@ -40,21 +40,34 @@ export default function PostConfirmationScreen() {
     try {
       setLoading(true);
 
-      const { error } = await supabase
+      console.log('🔍 Debug - Updating item:', {
+        item_id,
+        selectedOption,
+        status
+      });
+
+      const updateData = { 
+        keep_method: selectedOption,
+        due_time: selectedOption === 'self_7days' 
+          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+          : null
+      };
+
+      console.log('🔍 Debug - Update data:', updateData);
+
+      const { data, error } = await supabase
         .from('items')
-        .update({ 
-          keep_method: selectedOption,
-          due_time: selectedOption === 'self_7days' 
-            ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
-            : null
-        })
-        .eq('item_id', item_id);
+        .update(updateData)
+        .eq('item_id', item_id)
+        .select();
 
       if (error) {
-        console.error('Update error:', error.message);
+        console.error('❌ Update error:', error.message);
         Alert.alert('เกิดข้อผิดพลาด', error.message);
         return;
       }
+
+      console.log('✅ Update successful:', data);
 
       // Navigate to success screen
       router.push({
