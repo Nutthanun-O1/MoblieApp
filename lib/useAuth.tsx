@@ -1,20 +1,38 @@
+// lib/useAuth.tsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { supabase } from "./supabaseClient";
+import * as SecureStore from "expo-secure-store";
 
+type Role = "admin" | "member";
 export type MinimalUser = {
-  id: string;
-  email: string;
+  psu_id: string;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  role: Role;
 };
 
 type AuthContextValue = {
   user: MinimalUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (u: MinimalUser) => Promise<void>;
   signOut: () => Promise<void>;
   hydrateUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const STORAGE_KEY = "AUTH_USER";
+
+const storage = {
+  async getItem(key: string) {
+    try { return await SecureStore.getItemAsync(key); } catch { return null; }
+  },
+  async setItem(key: string, value: string) {
+    try { await SecureStore.setItemAsync(key, value); } catch {}
+  },
+  async removeItem(key: string) {
+    try { await SecureStore.deleteItemAsync(key); } catch {}
+  },
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<MinimalUser | null>(null);
@@ -23,15 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hydrateUser = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email ?? "",
-        });
-      } else {
-        setUser(null);
-      }
+      const raw = await storage.getItem(STORAGE_KEY);
+      if (raw) setUser(JSON.parse(raw));
+      else setUser(null);
     } finally {
       setLoading(false);
     }
@@ -39,49 +51,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     hydrateUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? "",
-        });
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    if (data.user) {
-      setUser({
-        id: data.user.id,
-        email: data.user.email ?? "",
-      });
-    }
+  const signIn = async (u: MinimalUser) => {
+    setUser(u);
+    await storage.setItem(STORAGE_KEY, JSON.stringify(u));
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
     setUser(null);
+    await storage.removeItem(STORAGE_KEY);
   };
 
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      signIn,
-      signOut,
-      hydrateUser,
-    }),
-    [user, loading]
-  );
+  const value = useMemo<AuthContextValue>(() => ({
+    user,
+    loading,
+    signIn,
+    signOut,
+    hydrateUser,
+  }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
