@@ -83,7 +83,10 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <View
-        style={[styles.container, { justifyContent: "center", alignItems: "center" }]}
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
       >
         <Text>กรุณาเข้าสู่ระบบ</Text>
       </View>
@@ -108,13 +111,12 @@ export default function ProfileScreen() {
                 {user.email} | {user.phone}
               </Text>
             </View>
-           <TouchableOpacity
-  style={styles.editBtn}
-  onPress={() => router.push("/EditProfileScreen")}
->
-  <Text style={{ color: "#0066FF" }}>แก้ไขโปรไฟล์</Text>
-</TouchableOpacity>
-
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={() => router.push("/EditProfileScreen")}
+            >
+              <Text style={{ color: "#0066FF" }}>แก้ไขโปรไฟล์</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -134,7 +136,16 @@ export default function ProfileScreen() {
         {/* Posts */}
         <Text style={styles.sectionTitle}>ประกาศของฉัน</Text>
         {posts.map((p) => (
-          <View key={p.item_id} style={styles.postCard}>
+          <TouchableOpacity
+            key={p.item_id}
+            style={styles.postCard}
+            onPress={() =>
+              router.push({
+                pathname: "/DetailScreen",
+                params: { item_id: p.item_id }, // ✅ ส่ง item_id
+              })
+            }
+          >
             <View style={styles.postImage} />
             <View style={{ flex: 1 }}>
               <Text style={styles.postTitle}>{p.title}</Text>
@@ -159,7 +170,7 @@ export default function ProfileScreen() {
                 {p.statusLabel}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
 
         {/* Settings */}
