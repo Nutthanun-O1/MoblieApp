@@ -113,15 +113,15 @@ export default function EditPostScreen() {
       allowsEditing: true,
       quality: 0.85,
     });
-    if (!res.canceled && res.assets?.length) {
+    if (!res.canceled && res.assets?.length && res.assets[0]) {
       setNewImageUri(res.assets[0].uri);
     }
   }
 
   async function uploadImageToStorage(imageUri: string, itemId: string) {
     const ext = (imageUri.split(".").pop() || "jpg").toLowerCase();
-    const fileName = ${itemId}_${Date.now()}.${ext};
-    const storagePath = items/${fileName};
+    const fileName = `${itemId}_${Date.now()}.${ext}`;
+    const storagePath = `items/${fileName}`;
 
     const res = await fetch(imageUri);
     // @ts-ignore – RN Response supports arrayBuffer in Expo
@@ -130,7 +130,7 @@ export default function EditPostScreen() {
     const { error: uploadErr } = await supabase.storage
       .from("item-photos")
       .upload(storagePath, arrayBuffer, {
-        contentType: image/${ext},
+        contentType: `image/${ext}`,
         upsert: true,
       });
     if (uploadErr) throw uploadErr;
