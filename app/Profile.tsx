@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -59,7 +60,14 @@ export default function ProfileScreen() {
 
       const { data, error } = await supabase
         .from("items")
-        .select("item_id, title, location, post_time, status")
+        .select(`
+          item_id,
+          title,
+          location,
+          post_time,
+          status,
+          item_photos(photo_url)
+        `) // ✅ join ตาราง item_photos
         .eq("posted_by", user.psu_id)
         .order("post_time", { ascending: false });
 
@@ -72,6 +80,8 @@ export default function ProfileScreen() {
               : p.status === "found"
               ? "พบของ"
               : "ส่งคืนแล้ว",
+          // ✅ ดึงรูปแรก ถ้ามี
+          thumbnail: p.item_photos?.[0]?.photo_url || null,
         }));
         setPosts(mapped);
       }
@@ -79,19 +89,6 @@ export default function ProfileScreen() {
 
     fetchPosts();
   }, [user]);
-
-  if (!user) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text>กรุณาเข้าสู่ระบบ</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -106,9 +103,9 @@ export default function ProfileScreen() {
           <View style={styles.row}>
             <View style={styles.avatar} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{user.full_name}</Text>
+              <Text style={styles.name}>{user?.full_name ?? ""}</Text>
               <Text style={styles.info}>
-                {user.email} | {user.phone}
+                {(user?.email ?? "") + " | " + (user?.phone ?? "")}
               </Text>
             </View>
             <TouchableOpacity
@@ -146,7 +143,16 @@ export default function ProfileScreen() {
               })
             }
           >
-            <View style={styles.postImage} />
+            {p.thumbnail ? (
+              <Image
+                source={{ uri: p.thumbnail }}
+                style={styles.postImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.postImage} />
+            )}
+
             <View style={{ flex: 1 }}>
               <Text style={styles.postTitle}>{p.title}</Text>
               <Text style={styles.postText}>Item ID: {p.item_id}</Text>
