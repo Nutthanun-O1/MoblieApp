@@ -212,7 +212,10 @@ export default function AdminDropOffCounter() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[
+      styles.safe,
+      { paddingTop: Math.max(insets.top - 8, 0), paddingBottom: insets.bottom + 12 }
+    ]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>จุดรับฝาก (Drop-off)</Text>
@@ -224,7 +227,7 @@ export default function AdminDropOffCounter() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 20 }}>
         {/* Fast drop-off form */}
         <View style={styles.panel}>
           <Text style={styles.panelTitle}>ฟอร์มรับฝากเร็ว</Text>
@@ -436,4 +439,5 @@ const styles = StyleSheet.create({
 
   badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
   badgeText: { fontWeight: "800", fontSize: 12 },
+  emptyText: { color: "#6B7280", marginTop: 6 },
 });

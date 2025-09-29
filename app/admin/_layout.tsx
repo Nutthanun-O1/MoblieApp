@@ -1,10 +1,12 @@
 // app/admin/_layout.tsx
 import React from "react";
 import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function AdminTabsLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       initialRouteName="dashboard"
@@ -15,15 +17,17 @@ export default function AdminTabsLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "700",
-          marginBottom: Platform.select({ ios: -2, android: 2 }),
+          marginBottom: Platform.select({ ios: -1, android: 1 }),
         },
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: "#E5E7EB",
           borderTopWidth: 1,
-          height: Platform.select({ ios: 86, android: 64 }),
-          paddingBottom: Platform.select({ ios: 24, android: 10 }),
-          paddingTop: 6,
+          height: Platform.select({ ios: 76, android: 60 }),
+          paddingBottom: Platform.select({ ios: 10, android: 8 }),
+          paddingTop: 4,
+          // ยกแท็บบาร์ขึ้นเหนือขอบล่าง/gesture bar
+          marginBottom: Math.max(insets.bottom, 0),
         },
       }}
     >

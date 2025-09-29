@@ -172,7 +172,10 @@ export default function AdminEditProfile() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[
+      styles.safe,
+      { paddingTop: Math.max(insets.top - 8, 0), paddingBottom: insets.bottom + 12 }
+    ]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -185,7 +188,7 @@ export default function AdminEditProfile() {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 24 }} />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 20 }}>
           {/* Avatar & ID */}
           <View style={styles.card}>
             <View style={styles.row}>

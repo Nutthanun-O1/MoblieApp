@@ -93,7 +93,10 @@ export default function AdminProfile() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[
+      styles.safe,
+      { paddingTop: Math.max(insets.top - 8, 0), paddingBottom: insets.bottom + 12 }
+    ]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>โปรไฟล์</Text>
