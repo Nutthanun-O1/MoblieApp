@@ -222,16 +222,13 @@ export default function AdminDashboard() {
   const drop1yShown = expand1y ? drop1y : drop1y.slice(0, 3);
 
   return (
-    <SafeAreaView style={[
-      styles.safe,
-      { paddingTop: Math.max(insets.top - 8, 0), paddingBottom: insets.bottom + 12 }
-    ]}>
+    <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={{ padding: 16 }}>
+      <View style={styles.header }>
         <Text style={styles.headerTitle}>แดชบอร์ดแอดมิน</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {/* Summary cards */}
         {/* Summary cards */}
 <View style={styles.cardsRow}>

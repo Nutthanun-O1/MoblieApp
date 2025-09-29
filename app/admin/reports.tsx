@@ -267,10 +267,7 @@ export default function AdminReports() {
   }
 
   return (
-    <SafeAreaView style={[
-      styles.safe,
-      { paddingTop: Math.max(insets.top - 8, 0), paddingBottom: insets.bottom + 12 }
-    ]}>
+    <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>รายงาน & ส่งออก</Text>
@@ -280,7 +277,7 @@ export default function AdminReports() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {/* Filter Bar */}
         <View style={styles.filterBar}>
           <TouchableOpacity style={styles.dateBox} onPress={() => openPicker("from")} activeOpacity={0.9}>
