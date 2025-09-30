@@ -7,8 +7,8 @@ This repository is an Expo mobile app starter (Expo + Supabase). It includes a s
 1) Create a `.env` file in the project root with your Supabase credentials (these should NOT be committed):
 
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJI...
+EXPO_PUBLIC_SUPABASE_URL=https://irugwqawygykchlkcguz.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlydWd3cWF3eWd5a2NobGtjZ3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MTM3NzQsImV4cCI6MjA3NDE4OTc3NH0.aN22f6a4xg5w_IuRl3nCDRPqAsnce6YZS_H0TklNLWU
 ```
 
 2) Install dependencies (Node 20 recommended):
